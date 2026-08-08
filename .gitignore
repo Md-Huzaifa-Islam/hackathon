@@ -1,0 +1,12 @@
+# Root-level safety net; frontend/ and backend/ also carry their own.
+.env
+.env.local
+*.local.env
+node_modules/
+dist/
+build/
+.next/
+*.log
+coverage/
+.DS_Store
+.claude/
