@@ -1,0 +1,67 @@
+[
+  {
+    "id": "movie_001",
+    "title": "Midnight Protocol",
+    "poster": "/movies/midnight-protocol.svg",
+    "description": "A clandestine analyst races to stop a data breach that could expose an entire city's secrets.",
+    "genre": ["Thriller", "Action"],
+    "durationMinutes": 128,
+    "rating": "8.4",
+    "price": 450,
+    "releaseDate": "2026-08-01",
+    "releaseType": "now-showing",
+    "tagline": "The city only has one chance to stay silent."
+  },
+  {
+    "id": "movie_002",
+    "title": "The Last Signal",
+    "poster": "/movies/last-signal.svg",
+    "description": "A deep-space relay receives a transmission from a ship that vanished twelve years ago.",
+    "genre": ["Sci-Fi", "Mystery"],
+    "durationMinutes": 114,
+    "rating": "8.1",
+    "price": 420,
+    "releaseDate": "2026-08-07",
+    "releaseType": "new-release",
+    "tagline": "A signal returns from the edge of time."
+  },
+  {
+    "id": "movie_003",
+    "title": "Dhaka After Dark",
+    "poster": "/movies/dhaka-after-dark.svg",
+    "description": "An ensemble crime drama following three strangers across one electric night in the capital.",
+    "genre": ["Drama", "Crime"],
+    "durationMinutes": 142,
+    "rating": "7.9",
+    "price": 650,
+    "releaseDate": "2026-08-09",
+    "releaseType": "now-showing",
+    "tagline": "Three stories. One city. Midnight on the clock."
+  },
+  {
+    "id": "movie_004",
+    "title": "Project Orion",
+    "poster": "/movies/project-orion.svg",
+    "description": "A field engineer and a test pilot attempt the first human launch from a private lunar yard.",
+    "genre": ["Adventure", "Sci-Fi"],
+    "durationMinutes": 136,
+    "rating": "8.6",
+    "price": 550,
+    "releaseDate": "2026-08-14",
+    "releaseType": "coming-soon",
+    "tagline": "The first launch begins at the edge of wonder."
+  },
+  {
+    "id": "movie_005",
+    "title": "Harbor of Echoes",
+    "poster": "/movies/harbor-of-echoes.svg",
+    "description": "A coastal town unravels after a radio host begins hearing future conversations on-air.",
+    "genre": ["Drama", "Fantasy"],
+    "durationMinutes": 107,
+    "rating": "7.7",
+    "price": 380,
+    "releaseDate": "2026-08-18",
+    "releaseType": "coming-soon",
+    "tagline": "The tide carries tomorrow before it arrives."
+  }
+]

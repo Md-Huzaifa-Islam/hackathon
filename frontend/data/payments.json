@@ -1,0 +1,30 @@
+[
+  {
+    "id": "payment_001",
+    "bookingId": "booking_001",
+    "status": "SUCCEEDED",
+    "amount": 450,
+    "currency": "BDT"
+  },
+  {
+    "id": "payment_002",
+    "bookingId": "booking_002",
+    "status": "PENDING",
+    "amount": 420,
+    "currency": "BDT"
+  },
+  {
+    "id": "payment_003",
+    "bookingId": "booking_003",
+    "status": "FAILED",
+    "amount": 1300,
+    "currency": "BDT"
+  },
+  {
+    "id": "payment_004",
+    "bookingId": "booking_005",
+    "status": "REFUNDED",
+    "amount": 380,
+    "currency": "BDT"
+  }
+]

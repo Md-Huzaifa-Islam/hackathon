@@ -1,0 +1,56 @@
+[
+  {
+    "id": "show_001",
+    "movieId": "movie_001",
+    "theatreId": "theatre_001",
+    "date": "2026-08-08",
+    "startTime": "20:00",
+    "endTime": "22:08",
+    "price": 450
+  },
+  {
+    "id": "show_002",
+    "movieId": "movie_001",
+    "theatreId": "theatre_002",
+    "date": "2026-08-08",
+    "startTime": "22:30",
+    "endTime": "00:38",
+    "price": 500
+  },
+  {
+    "id": "show_003",
+    "movieId": "movie_002",
+    "theatreId": "theatre_001",
+    "date": "2026-08-08",
+    "startTime": "18:15",
+    "endTime": "20:09",
+    "price": 420
+  },
+  {
+    "id": "show_004",
+    "movieId": "movie_003",
+    "theatreId": "theatre_003",
+    "date": "2026-08-09",
+    "startTime": "19:00",
+    "endTime": "21:22",
+    "price": 650
+  },
+  {
+    "id": "show_005",
+    "movieId": "movie_004",
+    "theatreId": "theatre_002",
+    "date": "2026-08-09",
+    "startTime": "16:45",
+    "endTime": "19:01",
+    "price": 550
+  },
+  {
+    "id": "show_006",
+    "movieId": "movie_005",
+    "theatreId": "theatre_001",
+    "date": "2026-08-10",
+    "startTime": "13:30",
+    "endTime": "15:17",
+    "price": 380
+  }
+]

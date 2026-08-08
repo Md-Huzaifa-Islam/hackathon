@@ -1,0 +1,94 @@
+[
+  {
+    "showId": "show_001",
+    "seats": [
+      { "id": "A01", "row": "A", "number": 1, "status": "AVAILABLE" },
+      { "id": "A02", "row": "A", "number": 2, "status": "AVAILABLE" },
+      { "id": "A03", "row": "A", "number": 3, "status": "HELD" },
+      { "id": "A04", "row": "A", "number": 4, "status": "SOLD" },
+      { "id": "A05", "row": "A", "number": 5, "status": "AVAILABLE" },
+      { "id": "A06", "row": "A", "number": 6, "status": "AVAILABLE" },
+      { "id": "B01", "row": "B", "number": 1, "status": "AVAILABLE" },
+      { "id": "B02", "row": "B", "number": 2, "status": "AVAILABLE" },
+      { "id": "B03", "row": "B", "number": 3, "status": "SOLD" },
+      { "id": "B04", "row": "B", "number": 4, "status": "AVAILABLE" },
+      { "id": "B05", "row": "B", "number": 5, "status": "HELD" },
+      { "id": "B06", "row": "B", "number": 6, "status": "AVAILABLE" }
+    ]
+  },
+  {
+    "showId": "show_002",
+    "seats": [
+      { "id": "A01", "row": "A", "number": 1, "status": "AVAILABLE" },
+      { "id": "A02", "row": "A", "number": 2, "status": "SOLD" },
+      { "id": "A03", "row": "A", "number": 3, "status": "AVAILABLE" },
+      { "id": "A04", "row": "A", "number": 4, "status": "AVAILABLE" },
+      { "id": "A05", "row": "A", "number": 5, "status": "AVAILABLE" },
+      { "id": "B01", "row": "B", "number": 1, "status": "AVAILABLE" },
+      { "id": "B02", "row": "B", "number": 2, "status": "AVAILABLE" },
+      { "id": "B03", "row": "B", "number": 3, "status": "HELD" },
+      { "id": "B04", "row": "B", "number": 4, "status": "AVAILABLE" },
+      { "id": "B05", "row": "B", "number": 5, "status": "AVAILABLE" }
+    ]
+  },
+  {
+    "showId": "show_003",
+    "seats": [
+      { "id": "A01", "row": "A", "number": 1, "status": "AVAILABLE" },
+      { "id": "A02", "row": "A", "number": 2, "status": "AVAILABLE" },
+      { "id": "A03", "row": "A", "number": 3, "status": "AVAILABLE" },
+      { "id": "A04", "row": "A", "number": 4, "status": "SOLD" },
+      { "id": "A05", "row": "A", "number": 5, "status": "AVAILABLE" },
+      { "id": "B01", "row": "B", "number": 1, "status": "AVAILABLE" },
+      { "id": "B02", "row": "B", "number": 2, "status": "HELD" },
+      { "id": "B03", "row": "B", "number": 3, "status": "AVAILABLE" },
+      { "id": "B04", "row": "B", "number": 4, "status": "AVAILABLE" },
+      { "id": "B05", "row": "B", "number": 5, "status": "AVAILABLE" }
+    ]
+  },
+  {
+    "showId": "show_004",
+    "seats": [
+      { "id": "A01", "row": "A", "number": 1, "status": "AVAILABLE" },
+      { "id": "A02", "row": "A", "number": 2, "status": "AVAILABLE" },
+      { "id": "A03", "row": "A", "number": 3, "status": "SOLD" },
+      { "id": "A04", "row": "A", "number": 4, "status": "AVAILABLE" },
+      { "id": "A05", "row": "A", "number": 5, "status": "AVAILABLE" },
+      { "id": "B01", "row": "B", "number": 1, "status": "AVAILABLE" },
+      { "id": "B02", "row": "B", "number": 2, "status": "AVAILABLE" },
+      { "id": "B03", "row": "B", "number": 3, "status": "HELD" },
+      { "id": "B04", "row": "B", "number": 4, "status": "AVAILABLE" },
+      { "id": "B05", "row": "B", "number": 5, "status": "AVAILABLE" }
+    ]
+  },
+  {
+    "showId": "show_005",
+    "seats": [
+      { "id": "A01", "row": "A", "number": 1, "status": "AVAILABLE" },
+      { "id": "A02", "row": "A", "number": 2, "status": "AVAILABLE" },
+      { "id": "A03", "row": "A", "number": 3, "status": "AVAILABLE" },
+      { "id": "A04", "row": "A", "number": 4, "status": "AVAILABLE" },
+      { "id": "A05", "row": "A", "number": 5, "status": "SOLD" },
+      { "id": "B01", "row": "B", "number": 1, "status": "AVAILABLE" },
+      { "id": "B02", "row": "B", "number": 2, "status": "AVAILABLE" },
+      { "id": "B03", "row": "B", "number": 3, "status": "AVAILABLE" },
+      { "id": "B04", "row": "B", "number": 4, "status": "HELD" },
+      { "id": "B05", "row": "B", "number": 5, "status": "AVAILABLE" }
+    ]
+  },
+  {
+    "showId": "show_006",
+    "seats": [
+      { "id": "A01", "row": "A", "number": 1, "status": "AVAILABLE" },
+      { "id": "A02", "row": "A", "number": 2, "status": "AVAILABLE" },
+      { "id": "A03", "row": "A", "number": 3, "status": "AVAILABLE" },
+      { "id": "A04", "row": "A", "number": 4, "status": "AVAILABLE" },
+      { "id": "A05", "row": "A", "number": 5, "status": "AVAILABLE" },
+      { "id": "B01", "row": "B", "number": 1, "status": "AVAILABLE" },
+      { "id": "B02", "row": "B", "number": 2, "status": "SOLD" },
+      { "id": "B03", "row": "B", "number": 3, "status": "AVAILABLE" },
+      { "id": "B04", "row": "B", "number": 4, "status": "AVAILABLE" },
+      { "id": "B05", "row": "B", "number": 5, "status": "AVAILABLE" }
+    ]
+  }
+]

@@ -1,0 +1,17 @@
+[
+  {
+    "id": "theatre_001",
+    "name": "Cinema Hall 1",
+    "location": "Main Branch"
+  },
+  {
+    "id": "theatre_002",
+    "name": "Cinema Hall 2",
+    "location": "Riverside Branch"
+  },
+  {
+    "id": "theatre_003",
+    "name": "IMAX Lounge",
+    "location": "City Center"
+  }
+]

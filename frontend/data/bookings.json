@@ -1,0 +1,52 @@
+[
+  {
+    "id": "booking_001",
+    "movieId": "movie_001",
+    "showtimeId": "show_001",
+    "seatIds": ["A01"],
+    "status": "CONFIRMED",
+    "totalAmount": 450,
+    "currency": "BDT",
+    "reference": "BK-001"
+  },
+  {
+    "id": "booking_002",
+    "movieId": "movie_002",
+    "showtimeId": "show_003",
+    "seatIds": ["B03"],
+    "status": "PENDING",
+    "totalAmount": 420,
+    "currency": "BDT",
+    "reference": "BK-002"
+  },
+  {
+    "id": "booking_003",
+    "movieId": "movie_003",
+    "showtimeId": "show_004",
+    "seatIds": ["A03", "A04"],
+    "status": "FAILED",
+    "totalAmount": 1300,
+    "currency": "BDT",
+    "reference": "BK-003"
+  },
+  {
+    "id": "booking_004",
+    "movieId": "movie_004",
+    "showtimeId": "show_005",
+    "seatIds": ["B04"],
+    "status": "EXPIRED",
+    "totalAmount": 550,
+    "currency": "BDT",
+    "reference": "BK-004"
+  },
+  {
+    "id": "booking_005",
+    "movieId": "movie_005",
+    "showtimeId": "show_006",
+    "seatIds": ["A05"],
+    "status": "REFUNDED",
+    "totalAmount": 380,
+    "currency": "BDT",
+    "reference": "BK-005"
+  }
+]
