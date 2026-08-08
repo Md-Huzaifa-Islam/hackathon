@@ -185,6 +185,14 @@ model Booking {
   showtimeId  String
   status      BookingStatus @default(PENDING_PAYMENT)
   totalAmount Int
+  // Immutable snapshot of the Seat ids this booking was created for.
+  // `seats` below is the *live* link and is deliberately mutable — when a
+  // hold expires another user can take the seat, which reassigns
+  // ShowSeat.bookingId and empties `seats`. That's correct for the seat map
+  // but destroys the record of what this booking was for, which the payment
+  // webhook needs in order to decide between seating a late payer and
+  // refunding them. Hence a snapshot that nothing ever rewrites.
+  seatIds     String[]      @default([])
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 

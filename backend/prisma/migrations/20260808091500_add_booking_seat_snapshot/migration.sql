@@ -1,0 +1,12 @@
+-- An immutable snapshot of the seats a booking was created for.
+--
+-- Until now the only record of "which seats does this booking want" was
+-- show_seats.bookingId, which is mutable: once a hold expires, another user
+-- booking that same seat reassigns the FK and the original booking silently
+-- loses all record of what it was for. That made it impossible to tell, when
+-- a late payment arrived, whether the customer should be seated or refunded.
+--
+-- Nullable-free with an empty-array default so existing rows backfill
+-- cleanly; bookings created before this migration fall back to the live
+-- show_seats relation.
+ALTER TABLE "bookings" ADD COLUMN "seatIds" TEXT[] DEFAULT ARRAY[]::TEXT[];

@@ -11,7 +11,12 @@ export async function releaseExpiredHolds(showtimeId?: string) {
       holdExpiresAt: { lt: new Date() },
       ...(showtimeId ? { showtimeId } : {}),
     },
-    data: { status: "AVAILABLE", holdExpiresAt: null, heldBy: null },
+    // bookingId is cleared too. Leaving it set produced a seat that read
+    // AVAILABLE while still pointing at someone's unpaid booking, so a later
+    // payment for that booking looked like it still owned the seat. The
+    // booking's own record of what it wanted lives in Booking.seatIds, which
+    // nothing rewrites, so dropping the link here loses no information.
+    data: { status: "AVAILABLE", holdExpiresAt: null, heldBy: null, bookingId: null },
   });
   return result.count;
 }
