@@ -156,8 +156,51 @@ Full endpoint list: [`backend/README.md`](./backend/README.md).
 cd backend && npm test     # concurrency, webhook idempotency, hold-expiry
 cd frontend && npm run lint
 ```
-k6 load tests (seat race, hold expiry, breakpoint ramp): [`load-tests/README.md`](./load-tests/README.md).
 CI runs typecheck/build/test for both apps and verifies both Dockerfiles build on every push.
+
+### Load test results
+
+Full k6 scripts, methodology, and reports: [`load-tests/`](./load-tests). Results below are from real runs, not estimates.
+
+**Scenario A — 100 concurrent holds on one seat**
+
+| Requests | Successful holds | Rejections (409) | Oversell |
+|---|---|---|---|
+| 100 | **1** | 99 | **0** |
+
+Exactly one winner, zero oversell, every time — the atomic conditional `UPDATE` holds under real concurrency.
+
+**Scenario B — abandoned hold expiry**
+
+| Event | Elapsed |
+|---|---|
+| User A holds the seat | 0.00 s |
+| User B refused while the hold is live | +2.46 s |
+| Hold expires (`HOLD_TTL_SECONDS=10`) | 10.00 s |
+| Seat observed `AVAILABLE` again | 10.86 s |
+| User B holds and books the freed seat | 16.18 s – 19.45 s |
+
+Seat is genuinely locked during the hold, and reliably released **1.68 s** after expiry.
+
+**Scenario C — breakpoint ramp (bonus, against the live deployment)**
+
+| VUs | Median | p95 | Errors |
+|---|---|---|---|
+| 5 | 2071 ms | 4795 ms | 0.0% |
+| 20 | 2276 ms | 4117 ms | 0.0% |
+| **40** | 4713 ms | **10522 ms** | 0.0% |
+| 80 | 10200 ms | 23804 ms | 0.0% |
+
+**p95 turns upward at 40 VUs**, with **zero errors at every load level tested** — the system degrades in latency under load, never in correctness. Consistent with the Prisma `connection_limit=10` pool as the bottleneck (`DECISIONS.md` #1c).
+
+## Screenshots
+
+| | |
+|---|---|
+| ![Home](./frontend/public/SS/home-page.jpeg) Home | ![New releases](./frontend/public/SS/new-releases.jpeg) New releases |
+| ![Showtimes](./frontend/public/SS/showtimes.jpeg) Showtime picker | ![Seat selection](./frontend/public/SS/seat-selection.jpeg) Seat selection & hold |
+| ![Stripe Checkout](./frontend/public/SS/stripe-checkout.jpeg) Stripe Checkout (live BDT→USD conversion) | ![My bookings](./frontend/public/SS/my-bookings.jpeg) My bookings |
+| ![Contact](./frontend/public/SS/contact.jpeg) Contact | |
 
 ## Deployment
 
