@@ -33,9 +33,12 @@ trade-offs: [`DECISIONS.md`](./DECISIONS.md).
 - The frontend never talks to Postgres/Redis/the gateway directly — it only
   calls the backend's HTTP API and renders backend-authoritative state.
 - The backend is the sole source of truth for seat availability, holds,
-  bookings, and payment status. `POST /bookings/:id/pay` calls the gateway's
-  `/charge` and returns immediately with `PENDING`; the gateway's async
-  callback (`POST /payments/callback`) is what actually confirms a booking.
+  bookings, and payment status. `POST /bookings/:id/pay` creates a Stripe
+  Checkout Session and returns immediately with `PENDING` and a
+  `checkoutUrl`; Stripe's async webhook (`POST /payments/stripe/webhook`) is
+  what actually confirms a booking. The mock gateway from the hackathon
+  brief is still used, but only for OTP send/verify — payments (charge and
+  refund) go through Stripe. See `DECISIONS.md` for why.
 - Postgres is **not** run in `docker-compose.yml` — it's an external managed
   database (Supabase, Neon, RDS, etc.) reached via `DATABASE_URL`. Auth is
   still handled entirely by better-auth against that same database (its
@@ -98,9 +101,13 @@ Root `.env` (used by `docker-compose.yml`) — see [`.env.example`](./.env.examp
 | Variable | Used by | Purpose |
 |---|---|---|
 | `DATABASE_URL` | backend | External Postgres connection string (Supabase, Neon, RDS, etc.) — **required**, no default. Not needed if you layer `docker-compose.local.yml` instead (see below). |
-| `HOLD_TTL_SECONDS` | backend | Seat hold lifetime in seconds before auto-release. Judges will set this low (e.g. `5`) to watch a hold expire live. |
+| `HOLD_TTL_SECONDS` | backend | Seat hold lifetime in seconds before auto-release. Defaults to `180` — a user who selects a seat gets 3 minutes to pay, after which the seat returns to `AVAILABLE` for anyone (including them) to claim again. Set it low (e.g. `5`) to watch a hold expire live. |
+| `PAYMENT_WINDOW_SECONDS` | backend | How long a seat stays reserved once the user reaches Stripe Checkout. Defaults to `900` (15 min) — deliberately longer than `HOLD_TTL_SECONDS`, which is the browse-and-decide window, not the time it takes to enter card details. |
 | `BETTER_AUTH_SECRET` | backend | Session signing secret. |
 | `NEXT_PUBLIC_API_BASE_URL` | frontend | Browser-reachable base URL of the backend API. **Must not be `localhost` in a real deployment** — set it to the deployed backend's public URL. |
+| `STRIPE_SECRET_KEY` | backend | Stripe secret key — **required**, no default. Get it from [dashboard.stripe.com/test/apikeys](https://dashboard.stripe.com/test/apikeys). |
+| `STRIPE_WEBHOOK_SECRET` | backend | Signs/verifies `POST /payments/stripe/webhook` — **required**, no default. From your Stripe webhook endpoint config, or `stripe listen` for local dev. |
+| `FRONTEND_URL` | backend | Where Stripe Checkout redirects the browser back to after payment — the frontend's public URL. |
 
 Full variable lists (including ones with Docker-internal defaults you don't
 need to touch): [`backend/.env.example`](./backend/.env.example),
@@ -169,10 +176,10 @@ setup, required secrets and variables, first deploy, rollback).
 
 ## Status
 
-Core booking flow is implemented and tested against the real gateway
-container: atomic seat hold (verified with a 100-way concurrency race, zero
-oversell), async pay with a signature-verified idempotent callback, OTP
-send/verify/resend, and a hold-expiry sweeper. See `DECISIONS.md` for the
+Core booking flow is implemented and tested: atomic seat hold (verified with
+a 100-way concurrency race, zero oversell), async pay via Stripe Checkout
+with a signature-verified idempotent webhook, OTP send/verify/resend against
+the mock gateway, and a hold-expiry sweeper. See `DECISIONS.md` for the
 concurrency/idempotency/signature-verification design and
 `backend/tests/integration/` for the tests exercising it.
 

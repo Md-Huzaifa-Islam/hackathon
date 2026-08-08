@@ -44,7 +44,7 @@ DOMAIN=cinemaseat.huzaifaswe.com
 API_DOMAIN=api.cinemaseat.huzaifaswe.com
 
 DATABASE_URL=postgresql://user:password@host:5432/postgres?connection_limit=10&pool_timeout=30
-HOLD_TTL_SECONDS=60
+HOLD_TTL_SECONDS=180
 BETTER_AUTH_SECRET=<openssl rand -hex 32>
 GATEWAY_SECRET=z2p-2026-secret
 TRUSTED_ORIGINS=https://cinemaseat.huzaifaswe.com

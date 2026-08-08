@@ -24,11 +24,23 @@ services:
   backend:
     build: !reset null
     image: ${GHCR_REPO:-ghcr.io/md-huzaifa-islam/heckathon-frontend}/backend:${IMAGE_TAG:-latest}
-    container_name: ${BACKEND_CONTAINER_NAME:-cinemaseat-backend}
+    # No container_name here on purpose: a fixed name can only ever apply to
+    # one container, which caps replicas at 1 and makes `docker compose up`
+    # error out ("container name already in use") the moment BACKEND_REPLICAS
+    # is raised above 1. Compose auto-names each replica instead
+    # (<project>-backend-1, -2, -3, ...).
     ports: !reset []
     networks:
       - default
       - proxy
+    # Traefik load-balances across every container matching this router's
+    # service label automatically — no extra config needed to fan requests
+    # out across replicas, just more containers registering under the same
+    # service name. Correctness under concurrent holds relies on Postgres
+    # row-level atomicity (see DECISIONS.md #2), not any in-process state,
+    # so it's safe to run several backend replicas side by side.
+    deploy:
+      replicas: ${BACKEND_REPLICAS:-3}
     # No Docker healthcheck here: Next.js's standalone server (see the
     # frontend service below) binds to $HOSTNAME when Docker sets it
     # (which it always does, to the container's own ID), not 127.0.0.1 —

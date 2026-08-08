@@ -31,8 +31,14 @@ jobs:
           NODE_ENV: test
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cinemaseat
           HOLD_TTL_SECONDS: "60"
+          PAYMENT_WINDOW_SECONDS: "900"
           GATEWAY_SECRET: z2p-2026-secret
           BETTER_AUTH_SECRET: ci-test-secret-not-for-production-use
+          # Dummy values: tests only exercise local HMAC signature
+          # verification (stripe.webhooks.constructEvent), never a real
+          # Stripe API call, so no real key is needed here.
+          STRIPE_SECRET_KEY: sk_test_ci_placeholder_no_real_calls_made
+          STRIPE_WEBHOOK_SECRET: whsec_ci_placeholder_no_real_calls_made
         run: npm test
     services:
       postgres:

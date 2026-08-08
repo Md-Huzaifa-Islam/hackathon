@@ -33,7 +33,8 @@ services:
       # which supplies a disposable in-compose Postgres.
       DATABASE_URL: ${DATABASE_URL:-}
       REDIS_URL: redis://redis:6379
-      HOLD_TTL_SECONDS: ${HOLD_TTL_SECONDS:-60}
+      HOLD_TTL_SECONDS: ${HOLD_TTL_SECONDS:-180}
+      PAYMENT_WINDOW_SECONDS: ${PAYMENT_WINDOW_SECONDS:-900}
       GATEWAY_URL: http://gateway:9000
       CALLBACK_BASE_URL: http://backend:4000
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-change-me-in-production}
@@ -45,6 +46,12 @@ services:
       # frontend's own URL, not NEXT_PUBLIC_API_BASE_URL (which is the
       # backend's URL). Comma-separated if you need more than one.
       TRUSTED_ORIGINS: ${TRUSTED_ORIGINS:-http://localhost:3000}
+      # Stripe is the real payment provider (mock gateway is OTP-only) — see
+      # .env.example for where to get these.
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      STRIPE_CURRENCY: ${STRIPE_CURRENCY:-usd}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
     depends_on:
       redis:
         condition: service_healthy

@@ -1,24 +1,63 @@
-import { createHmac, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import request from "supertest";
 import { createApp } from "@/app.js";
 import { prisma } from "@/lib/prisma.js";
 import { env } from "@/config/env.js";
+import { stripe } from "@/lib/stripeClient.js";
 import { generateBookingRef } from "@/lib/bookingRef.js";
 import { signUpTestUser, createTestShowtime } from "./helpers.js";
 
-function signedPost(app: ReturnType<typeof createApp>, body: object) {
-  // Sign the exact bytes JSON.stringify(body) produces — supertest serialises
-  // the same object the same way, so the signature matches what the
-  // server's express.json({ verify }) captures as rawBody.
-  const signature = createHmac("sha256", env.gatewaySecret).update(JSON.stringify(body)).digest("hex");
-  return request(app).post("/payments/callback").set("X-Signature", signature).send(body);
+function signedPost(app: ReturnType<typeof createApp>, eventBody: object) {
+  const payload = JSON.stringify(eventBody);
+  const header = stripe.webhooks.generateTestHeaderString({
+    payload,
+    secret: env.stripeWebhookSecret,
+  });
+  return request(app)
+    .post("/payments/stripe/webhook")
+    .set("stripe-signature", header)
+    .set("Content-Type", "application/json")
+    .send(payload);
 }
 
-// Mirrors the gateway's documented 8% duplicate-delivery rate: the same
-// event_id arriving twice must confirm the booking once, create one payment
-// row, and never double-count revenue.
-describe("POST /payments/callback idempotency", () => {
+function checkoutCompletedEvent(input: {
+  bookingId: string;
+  paymentIntentId: string;
+  amount: number;
+}) {
+  return {
+    id: `evt_${randomUUID()}`,
+    type: "checkout.session.completed",
+    data: {
+      object: {
+        id: `cs_${randomUUID()}`,
+        payment_status: "paid",
+        payment_intent: input.paymentIntentId,
+        metadata: { bookingId: input.bookingId },
+        amount_total: input.amount * 100,
+      },
+    },
+  };
+}
+
+function paymentFailedEvent(input: { bookingId: string; paymentIntentId: string }) {
+  return {
+    id: `evt_${randomUUID()}`,
+    type: "payment_intent.payment_failed",
+    data: {
+      object: {
+        id: input.paymentIntentId,
+        metadata: { bookingId: input.bookingId },
+      },
+    },
+  };
+}
+
+// Stripe redelivers webhooks and can retry non-2xx responses up to several
+// times — the same event.id arriving twice must confirm the booking once,
+// create one payment row, and never double-count revenue.
+describe("POST /payments/stripe/webhook idempotency", () => {
   const app = createApp();
   let ctx: Awaited<ReturnType<typeof createTestShowtime>>;
   let userId: string;
@@ -54,28 +93,25 @@ describe("POST /payments/callback idempotency", () => {
     bookingId = booking.id;
   });
 
-  it("rejects a callback with a missing/invalid signature", async () => {
+  it("rejects a webhook with a missing/invalid signature", async () => {
     const res = await request(app)
-      .post("/payments/callback")
-      .send({ event_id: "evt_x", booking_ref: bookingRef, status: "SUCCEEDED", amount: 100 });
-    expect(res.status).toBe(401);
+      .post("/payments/stripe/webhook")
+      .send(JSON.stringify({ id: "evt_x" }));
+    expect(res.status).toBe(400);
   });
 
-  it("confirms the booking once even when the same event_id is delivered twice", async () => {
-    const eventId = `evt_${randomUUID()}`;
-    const payload = {
-      event_id: eventId,
-      payment_id: `pay_${randomUUID()}`,
-      booking_ref: bookingRef,
-      status: "SUCCEEDED" as const,
+  it("confirms the booking once even when the same event.id is delivered twice", async () => {
+    const event = checkoutCompletedEvent({
+      bookingId,
+      paymentIntentId: `pi_${randomUUID()}`,
       amount: 100,
-    };
+    });
 
-    const first = await signedPost(app, payload);
-    const second = await signedPost(app, payload); // exact redelivery
+    const first = await signedPost(app, event);
+    const second = await signedPost(app, event); // exact redelivery
 
     expect(first.status).toBe(200);
-    expect(second.status).toBe(200); // gateway contract: always 2xx, even for duplicates
+    expect(second.status).toBe(200); // webhook contract: always 2xx, even for duplicates
 
     const booking = await prisma.booking.findUnique({ where: { id: bookingId } });
     expect(booking?.status).toBe("CONFIRMED");
@@ -88,32 +124,22 @@ describe("POST /payments/callback idempotency", () => {
     expect(showSeat?.status).toBe("BOOKED");
   });
 
-  it("tolerates the callback arriving before the payment row has a gateway paymentId", async () => {
-    // Simulates the "race" force header: no prior Payment row exists yet
-    // when the callback lands (pay's PENDING insert and the callback race).
-    const eventId = `evt_${randomUUID()}`;
-    const res = await signedPost(app, {
-      event_id: eventId,
-      payment_id: `pay_${randomUUID()}`,
-      booking_ref: bookingRef,
-      status: "SUCCEEDED",
-      amount: 100,
-    });
+  it("tolerates the webhook arriving before the payment row has a Stripe paymentId", async () => {
+    // No prior Payment row with this paymentIntentId exists yet — the
+    // handler must still find the PENDING row created by /bookings/:id/pay.
+    const paymentIntentId = `pi_${randomUUID()}`;
+    const event = checkoutCompletedEvent({ bookingId, paymentIntentId, amount: 100 });
+    const res = await signedPost(app, event);
     expect(res.status).toBe(200);
 
     const payments = await prisma.payment.findMany({ where: { bookingId } });
     expect(payments).toHaveLength(1);
-    expect(payments[0].eventId).toBe(eventId);
+    expect(payments[0].eventId).toBe(event.id);
   });
 
-  it("leaves the booking payable (not confirmed) on a FAILED callback", async () => {
-    const res = await signedPost(app, {
-      event_id: `evt_${randomUUID()}`,
-      payment_id: `pay_${randomUUID()}`,
-      booking_ref: bookingRef,
-      status: "FAILED",
-      amount: 100,
-    });
+  it("leaves the booking payable (not confirmed) on payment_intent.payment_failed", async () => {
+    const event = paymentFailedEvent({ bookingId, paymentIntentId: `pi_${randomUUID()}` });
+    const res = await signedPost(app, event);
     expect(res.status).toBe(200);
 
     const booking = await prisma.booking.findUnique({ where: { id: bookingId } });

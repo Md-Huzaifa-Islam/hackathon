@@ -6,6 +6,9 @@ interface PayResponse {
   status: "PENDING" | "CONFIRMED";
   paymentId?: string;
   bookingRef?: string;
+  // Set when a new Stripe Checkout Session was created — absent on the
+  // early-return "already CONFIRMED" case.
+  checkoutUrl?: string;
 }
 
 export function createPaymentApiService(): PaymentService {
@@ -20,7 +23,9 @@ export function createPaymentApiService(): PaymentService {
         bookingId,
         status: result.status === "CONFIRMED" ? "SUCCEEDED" : "PENDING",
         amount: 0,
-        currency: "BDT",
+        currency: "USD",
+        provider: "stripe",
+        checkoutUrl: result.checkoutUrl,
       };
       return payment;
     },

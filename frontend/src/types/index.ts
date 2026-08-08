@@ -98,6 +98,9 @@ export interface Payment {
   currency: string;
   provider?: string;
   createdAt?: string;
+  // Present when the payment provider is Stripe Checkout — the caller must
+  // redirect the browser here to complete payment.
+  checkoutUrl?: string;
 }
 
 export interface SeatMap {

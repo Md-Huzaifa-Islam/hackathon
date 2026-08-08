@@ -64,16 +64,18 @@ npm run dev
 - `GET /movies`, `GET /movies/:id/showtimes`
 - `POST /bookings` — turn held seats into a `PENDING_PAYMENT` booking
 - `GET /bookings/:id` — poll for booking/payment status
-- `POST /bookings/:id/pay` — kicks off the gateway charge, returns `202 PENDING` immediately
-- `POST /payments/callback` — gateway's async payment webhook (HMAC-verified, idempotent)
-- `POST /otp/send`, `POST /otp/verify`, `POST /otp/callback`, `GET /otp/status/:ref`
+- `POST /bookings/:id/pay` — creates a Stripe Checkout Session, returns `202 { status: "PENDING", checkoutUrl }` immediately; the client redirects the browser to `checkoutUrl`
+- `POST /payments/stripe/webhook` — Stripe's async payment webhook (signature-verified via `STRIPE_WEBHOOK_SECRET`, idempotent on `event.id`)
+- `POST /otp/send`, `POST /otp/verify`, `POST /otp/callback`, `GET /otp/status/:ref` — still the mock gateway; OTP is unrelated to payment and wasn't part of the Stripe migration
 - `POST /bookings/:id/cancel`
 
 ## Environment variables
 
 See `.env.example`. `HOLD_TTL_SECONDS` controls how long a seat hold lasts
-before auto-release — set it low (e.g. `HOLD_TTL_SECONDS=5`) to observe hold
-expiry quickly.
+before auto-release. It defaults to `180`: selecting a seat gives the user 3
+minutes to complete payment, after which the seat goes back to `AVAILABLE`
+and anyone — including the same user — can claim it again. Set it low (e.g.
+`HOLD_TTL_SECONDS=5`) to observe hold expiry quickly.
 
 ## Testing
 

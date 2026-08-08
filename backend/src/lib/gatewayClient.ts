@@ -1,19 +1,8 @@
 import { env } from "@/config/env.js";
 import { logger } from "@/lib/logger.js";
 
-type ChargeRequest = {
-  amount: number;
-  currency: string;
-  booking_ref: string;
-  callback_url: string;
-  idempotencyKey?: string;
-};
-
-type ChargeResponse = {
-  payment_id: string;
-  status: "PENDING";
-};
-
+// Payments (charge/refund) go through Stripe (@/lib/stripeClient.ts) now —
+// this client only talks to the mock gateway for OTP send/verify.
 const GATEWAY_TIMEOUT_MS = 4000;
 
 async function postJson<T>(
@@ -36,29 +25,13 @@ async function postJson<T>(
     }
     return (await res.json()) as T;
   } catch (err) {
-    // Covers the documented 2% /charge timeout/500 as well as network
-    // errors. Callers must treat a null return as "unknown, not failed" —
-    // the booking stays PENDING_PAYMENT and the callback (or its absence)
-    // is what the user-facing polling loop reacts to.
+    // Covers the documented 10% OTP non-delivery rate as well as network
+    // errors — callers must treat a null return as "unknown, not failed".
     logger.warn({ path, err }, "gateway call failed");
     return null;
   } finally {
     clearTimeout(timeout);
   }
-}
-
-// Fire-and-forget by design: callers must not block on this. Persist a
-// PENDING record before calling, then let the async callback finish the job.
-export function charge({ idempotencyKey, ...input }: ChargeRequest) {
-  return postJson<ChargeResponse>(
-    "/charge",
-    input,
-    idempotencyKey ? { "Idempotency-Key": idempotencyKey } : undefined,
-  );
-}
-
-export function refund(paymentId: string) {
-  return postJson<{ status: "PENDING" }>("/refund", { payment_id: paymentId });
 }
 
 export function sendOtp(phone: string, ref: string, callbackUrl: string) {
