@@ -1,0 +1,14 @@
+# Production override: replaces `build:` with the images published to GHCR
+# by .github/workflows/cd.yml. Used on the deploy host as:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# GHCR_REPO defaults to this repo's own package path; IMAGE_TAG defaults to
+# `latest` (CD also tags every push with the commit SHA if you want to pin).
+services:
+  backend:
+    build: !reset null
+    image: ${GHCR_REPO:-ghcr.io/md-huzaifa-islam/heckathon-frontend}/backend:${IMAGE_TAG:-latest}
+
+  frontend:
+    build: !reset null
+    image: ${GHCR_REPO:-ghcr.io/md-huzaifa-islam/heckathon-frontend}/frontend:${IMAGE_TAG:-latest}

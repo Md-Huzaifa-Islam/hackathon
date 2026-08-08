@@ -17,4 +17,6 @@ export const env = {
   gatewayUrl: required("GATEWAY_URL", "http://localhost:9000"),
   callbackBaseUrl: required("CALLBACK_BASE_URL", "http://localhost:4000"),
   betterAuthSecret: required("BETTER_AUTH_SECRET", "dev-secret-change-me"),
+  gatewaySecret: process.env.GATEWAY_SECRET ?? "z2p-2026-secret",
+  trustedOrigins: (process.env.TRUSTED_ORIGINS ?? "http://localhost:3000").split(","),
 };
