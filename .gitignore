@@ -1,0 +1,8 @@
+# Root env file for `docker compose up` — contains real credentials
+# (DATABASE_URL, BETTER_AUTH_SECRET, etc). Never commit this; copy from
+# .env.example instead.
+.env
+.env.local
+.env.production
+
+node_modules/
