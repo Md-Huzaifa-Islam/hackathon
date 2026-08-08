@@ -1,18 +1,10 @@
-import { PaymentStatus } from "@/components/booking/payment-status";
-import { bookings } from "@/data/bookings";
+import { BookingPage } from "@/components/pages/booking-page";
 
-export default async function BookingPage({
+export default async function BookingRoute({
   params,
 }: {
   params: Promise<{ bookingId: string }>;
 }) {
   const { bookingId } = await params;
-  const booking = bookings.find((b) => b.id === bookingId) ?? bookings[0];
-
-  return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 p-8">
-      <h1 className="text-2xl font-semibold">Booking</h1>
-      <PaymentStatus status={booking.status} />
-    </main>
-  );
+  return <BookingPage bookingId={bookingId} />;
 }

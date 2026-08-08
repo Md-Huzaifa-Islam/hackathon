@@ -6,6 +6,8 @@ const STATUS_STYLES: Record<Seat["status"], string> = {
   HELD: "bg-yellow-500/30 cursor-not-allowed",
   HELD_BY_ME: "bg-blue-500/40",
   BOOKED: "bg-muted cursor-not-allowed opacity-60",
+  SOLD: "bg-muted cursor-not-allowed opacity-60 line-through",
+  SELECTED: "bg-primary text-primary-foreground",
 };
 
 export function SeatGrid({
@@ -21,7 +23,7 @@ export function SeatGrid({
         <button
           key={seat.id}
           type="button"
-          disabled={seat.status === "BOOKED" || seat.status === "HELD"}
+          disabled={seat.status === "BOOKED" || seat.status === "HELD" || seat.status === "SOLD"}
           onClick={() => onSelectSeat?.(seat)}
           className={cn(
             "aspect-square rounded-md text-xs font-medium",

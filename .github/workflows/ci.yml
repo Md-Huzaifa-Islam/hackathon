@@ -3,7 +3,7 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, dev]
 
 jobs:
   backend:
@@ -23,10 +23,16 @@ jobs:
       - run: npx prisma generate
       - run: npm run typecheck
       - run: npm run build
-      - name: Test
+      - run: npx prisma migrate deploy
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cinemaseat
+      - name: Test
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cinemaseat
           HOLD_TTL_SECONDS: "60"
+          GATEWAY_SECRET: z2p-2026-secret
+          BETTER_AUTH_SECRET: ci-test-secret-not-for-production-use
         run: npm test
     services:
       postgres:

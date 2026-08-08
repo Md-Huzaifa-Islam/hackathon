@@ -8,14 +8,16 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  name      String?
-  password  String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String   @id @default(uuid())
+  email         String   @unique
+  emailVerified Boolean  @default(false)
+  name          String?
+  image         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   sessions Session[]
+  accounts Account[]
   bookings Booking[]
 
   @@map("users")
@@ -26,21 +28,67 @@ model Session {
   userId    String
   token     String   @unique
   expiresAt DateTime
+  ipAddress String?
+  userAgent String?
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("sessions")
 }
 
+// better-auth's emailAndPassword provider stores the hashed password on the
+// "credential" Account row, not on User — see betterauth.com/docs/concepts/database#account.
+model Account {
+  id                    String    @id @default(uuid())
+  userId                String
+  accountId             String
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, accountId])
+  @@map("accounts")
+}
+
+model Verification {
+  id         String   @id @default(uuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("verifications")
+}
+
+enum ReleaseType {
+  NOW_SHOWING
+  NEW_RELEASE
+  COMING_SOON
+}
+
 model Movie {
-  id          String   @id @default(uuid())
+  id          String      @id @default(uuid())
   title       String
   poster      String?
   description String?
   durationMin Int
   genre       String?
-  createdAt   DateTime @default(now())
+  rating      String?
+  releaseType ReleaseType @default(NOW_SHOWING)
+  releaseDate DateTime?
+  createdAt   DateTime    @default(now())
 
   showtimes Showtime[]
 
@@ -153,6 +201,18 @@ enum PaymentStatus {
   SUCCEEDED
   FAILED
   REFUNDED
+}
+
+model OtpRequest {
+  id        String   @id @default(uuid())
+  ref       String   @unique
+  phone     String
+  delivered Boolean  @default(false)
+  attempts  Int      @default(1)
+  lastSentAt DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@map("otp_requests")
 }
 
 model Payment {

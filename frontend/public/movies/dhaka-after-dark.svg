@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1200" fill="none">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#111111"/>
+      <stop offset="1" stop-color="#3f3f46"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="1200" fill="url(#g)"/>
+  <text x="80" y="140" fill="#f5d0fe" font-family="Arial, sans-serif" font-size="48" font-weight="700">Dhaka After Dark</text>
+  <rect x="140" y="260" width="520" height="520" rx="48" fill="#27272a" stroke="#f43f5e" stroke-width="6"/>
+  <rect x="90" y="820" width="620" height="160" rx="28" fill="#111111" fill-opacity="0.7"/>
+  <text x="400" y="915" text-anchor="middle" fill="#fafafa" font-family="Arial, sans-serif" font-size="38">Drama / Crime</text>
+</svg>

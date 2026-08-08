@@ -1,13 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
-import { apiFetch } from "@/lib/api-client";
-import type { Seat } from "@/types";
+import { useCinemaServices } from "@/services/service-provider";
 
 const POLL_INTERVAL_MS = 3000;
 
 export function useSeatMap(showtimeId: string) {
+  const { seats } = useCinemaServices();
+
   return useQuery({
     queryKey: ["seat-map", showtimeId],
-    queryFn: () => apiFetch<Seat[]>(`/showtimes/${showtimeId}/seats`),
+    queryFn: () => seats.getSeatMap(showtimeId),
     refetchInterval: POLL_INTERVAL_MS,
   });
 }

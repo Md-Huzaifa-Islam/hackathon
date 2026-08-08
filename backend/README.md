@@ -6,20 +6,28 @@ full spec and root `DECISIONS.md` for implementation choices and open items.
 
 ## Stack
 
-Node.js + TypeScript, Express, Prisma (Postgres), better-auth, Redis, Docker.
+Node.js + TypeScript, Express, Prisma, better-auth, Redis, Docker. Postgres
+is external (Supabase/Neon/RDS/etc.) — not run in `docker-compose.yml`.
 
 ## Quickstart (Docker)
 
 From the repo root:
 
 ```bash
-cp .env.example .env
+cp .env.example .env   # then set DATABASE_URL to a real Postgres connection string
 docker compose up --build
 ```
 
-This brings up Postgres, Redis, the mock payment/OTP gateway, the backend
-API, and the frontend. Migrations and seed data run automatically on backend
-container start (`docker-entrypoint.sh`). No manual steps required.
+No external database handy? Layer the local-Postgres overlay instead of
+setting `DATABASE_URL` — see the root README's "Zero-config local run":
+
+```bash
+docker compose -f ../docker-compose.yml -f ../docker-compose.local.yml up --build
+```
+
+Either way this brings up Redis, the mock payment/OTP gateway, the backend
+API, and the frontend, with migrations and seed data run automatically on
+backend container start (`docker-entrypoint.sh`).
 
 API is available at `http://localhost:4000`.
 
@@ -27,8 +35,8 @@ API is available at `http://localhost:4000`.
 
 ```bash
 npm install
-docker compose -f ../docker-compose.yml up postgres redis gateway -d
-cp .env.example .env   # then point DATABASE_URL/REDIS_URL/GATEWAY_URL at localhost
+docker compose -f ../docker-compose.yml up redis gateway -d
+cp .env.example .env   # point DATABASE_URL at your external Postgres, REDIS_URL/GATEWAY_URL at localhost
 npx prisma migrate dev
 npm run seed
 npm run dev
@@ -44,17 +52,21 @@ npm run dev
   GET /showtimes/:id/seats
   ```
 
-- **Hold a seat**
+- **Hold a seat** (requires an authenticated session)
 
   ```
   POST /showtimes/:id/seats/:seatId/hold
   ```
 
-  (Currently a stub — see `src/routes/showtimes.routes.ts`.)
+  Atomic `UPDATE ... WHERE status = 'AVAILABLE'` — exactly one concurrent
+  request wins, everyone else gets a `409` with the current seat status.
 
 - `GET /movies`, `GET /movies/:id/showtimes`
-- `POST /bookings/:id/pay`, `POST /payments/callback`
-- `POST /otp/send`, `POST /otp/verify`
+- `POST /bookings` — turn held seats into a `PENDING_PAYMENT` booking
+- `GET /bookings/:id` — poll for booking/payment status
+- `POST /bookings/:id/pay` — kicks off the gateway charge, returns `202 PENDING` immediately
+- `POST /payments/callback` — gateway's async payment webhook (HMAC-verified, idempotent)
+- `POST /otp/send`, `POST /otp/verify`, `POST /otp/callback`, `GET /otp/status/:ref`
 - `POST /bookings/:id/cancel`
 
 ## Environment variables
@@ -91,9 +103,16 @@ tests/
 
 ## Status
 
-This is a scaffold: tech stack installed, folder structure and routing wired
-up, Prisma schema modeled per the spec, Docker Compose stack complete
-(api + postgres + redis + gateway). Core business logic (atomic seat hold,
-async payment flow, idempotent callback handling, hold-expiry sweeper) is
-stubbed with `501`s and TODOs — see `DECISIONS.md` and inline comments in
-`src/routes/`.
+Core booking flow is implemented and tested against the real gateway
+container: hold (atomic conditional update), booking creation, async pay +
+signature-verified idempotent callback, OTP send/verify/resend, and a
+belt-and-suspenders hold-expiry sweeper (lazy on read + a 5s background
+job). See `DECISIONS.md` for the concurrency/idempotency design and
+`tests/integration/` for the concurrency-race and duplicate-callback tests
+that exercise it.
+
+Not yet done: rate limiting / input validation hardening, refund-callback
+handling on the `Payment` row (refund is fired but its `REFUNDED` callback
+reuses the same idempotent path, untested), and the actual deploy step in
+`cd.yml` is wired but inert until `DEPLOY_HOST`/`DEPLOY_USER`/`DEPLOY_SSH_KEY`
+secrets and the `DEPLOY_ENABLED` repo variable are set.

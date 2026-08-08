@@ -5,7 +5,6 @@ export function useHoldCountdown(expiresAt?: string) {
 
   useEffect(() => {
     if (!expiresAt) {
-      setSecondsLeft(null);
       return;
     }
 
@@ -21,5 +20,6 @@ export function useHoldCountdown(expiresAt?: string) {
     return () => clearInterval(interval);
   }, [expiresAt]);
 
-  return { secondsLeft, expired: secondsLeft === 0 };
+  const active = Boolean(expiresAt);
+  return { secondsLeft: active ? secondsLeft : null, expired: active && secondsLeft === 0 };
 }

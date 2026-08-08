@@ -34,12 +34,38 @@ jobs:
             NEXT_PUBLIC_API_BASE_URL=${{ vars.NEXT_PUBLIC_API_BASE_URL }}
           tags: ghcr.io/${{ github.repository }}/frontend:latest,ghcr.io/${{ github.repository }}/frontend:${{ github.sha }}
 
-  # TODO: wire up an actual deploy step once the target host (Poridhi VM or
-  # AWS) is provisioned — e.g. SSH into the host and `docker compose pull &&
-  # docker compose up -d` using the images published above. Needs
-  # DEPLOY_HOST / DEPLOY_SSH_KEY repo secrets, not yet configured.
-  # deploy:
-  #   needs: publish-images
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - ...
+  # SSHes into the deploy host and re-pulls/restarts the compose stack using
+  # the images just published above. No-ops (job is skipped) until
+  # DEPLOY_HOST/DEPLOY_USER/DEPLOY_SSH_KEY repo secrets are set — see
+  # DEPLOYMENT.md for how to provision the host and add them.
+  deploy:
+    name: Deploy to host
+    needs: publish-images
+    runs-on: ubuntu-latest
+    if: vars.DEPLOY_ENABLED == 'true'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Copy compose files to host
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          source: "docker-compose.yml,docker-compose.prod.yml"
+          target: "/opt/app/cinemaseat"
+
+      - name: Pull and restart stack
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            cd /opt/app/cinemaseat
+            export GHCR_REPO=ghcr.io/${{ github.repository }}
+            export IMAGE_TAG=${{ github.sha }}
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+            docker image prune -f
