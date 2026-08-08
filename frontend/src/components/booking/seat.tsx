@@ -25,7 +25,7 @@ export function SeatButton({
   return (
     <button
       type="button"
-      aria-label={`Seat ${seat.id}, ${state.toLowerCase()}`}
+      aria-label={`Seat ${seat.label ?? seat.id}, ${state.toLowerCase()}`}
       aria-pressed={selected ? "true" : "false"}
       disabled={disabled}
       onClick={() => onClick?.(seat)}
@@ -34,7 +34,7 @@ export function SeatButton({
         STATUS_STYLES[state]
       )}
     >
-      {seat.id}
+      {seat.number}
     </button>
   );
 }
