@@ -1,0 +1,66 @@
+[
+  {
+    "id": "showtime-1",
+    "movie_id": "movie-1",
+    "theatre_id": "theatre-1",
+    "hall_name": "Aurora Hall",
+    "start_time": "2025-07-20T18:30:00Z",
+    "price": 1200
+  },
+  {
+    "id": "showtime-2",
+    "movie_id": "movie-1",
+    "theatre_id": "theatre-1",
+    "hall_name": "Starlight Hall",
+    "start_time": "2026-08-08T18:30:00Z",
+    "price": 1200
+  },
+  {
+    "id": "showtime-3",
+    "movie_id": "movie-2",
+    "theatre_id": "theatre-2",
+    "hall_name": "Cosmos Hall",
+    "start_time": "2026-08-08T20:45:00Z",
+    "price": 1400
+  },
+  {
+    "id": "showtime-4",
+    "movie_id": "movie-2",
+    "theatre_id": "theatre-2",
+    "hall_name": "Cosmos Hall",
+    "start_time": "2026-08-09T19:00:00Z",
+    "price": 1450
+  },
+  {
+    "id": "showtime-5",
+    "movie_id": "movie-3",
+    "theatre_id": "theatre-3",
+    "hall_name": "Silver Screen",
+    "start_time": "2026-08-10T20:00:00Z",
+    "price": 1600
+  },
+  {
+    "id": "showtime-6",
+    "movie_id": "movie-3",
+    "theatre_id": "theatre-3",
+    "hall_name": "Silver Screen",
+    "start_time": "2026-08-11T19:30:00Z",
+    "price": 1550
+  },
+  {
+    "id": "showtime-7",
+    "movie_id": "movie-4",
+    "theatre_id": "theatre-1",
+    "hall_name": "Luna Hall",
+    "start_time": "2026-08-12T17:30:00Z",
+    "price": 1250
+  },
+  {
+    "id": "showtime-8",
+    "movie_id": "movie-5",
+    "theatre_id": "theatre-3",
+    "hall_name": "Premiere Lounge",
+    "start_time": "2026-08-14T21:00:00Z",
+    "price": 2200
+  }
+]

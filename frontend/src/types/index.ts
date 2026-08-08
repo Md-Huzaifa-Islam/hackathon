@@ -12,6 +12,8 @@ export interface Movie {
   posterUrl?: string;
   durationMinutes?: number;
   genre?: string;
+  synopsis?: string;
+  rating?: number;
 }
 
 export interface Showtime {

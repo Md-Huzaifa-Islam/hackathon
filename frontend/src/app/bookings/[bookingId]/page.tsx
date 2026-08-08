@@ -1,5 +1,5 @@
+import { getBooking, getBookings } from "@/api/mockClient";
 import { PaymentStatus } from "@/components/booking/payment-status";
-import { bookings } from "@/data/bookings";
 
 export default async function BookingPage({
   params,
@@ -7,7 +7,7 @@ export default async function BookingPage({
   params: Promise<{ bookingId: string }>;
 }) {
   const { bookingId } = await params;
-  const booking = bookings.find((b) => b.id === bookingId) ?? bookings[0];
+  const booking = getBooking(bookingId) ?? getBookings()[0];
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 p-8">
