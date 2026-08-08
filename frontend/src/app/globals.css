@@ -49,81 +49,81 @@
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-}
+  --cinema-ink: #06070a;
+  --cinema-velvet: #22172c;
+  --cinema-gold: #f2c95b;
+  --cinema-red: #8b1e2d;
+  --cinema-screen: #4fd1ff;
+  --cinema-ivory: #f7eedc;
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: var(--cinema-ink);
+  --foreground: var(--cinema-ivory);
+  --card: rgba(13, 12, 18, 0.9);
+  --card-foreground: var(--cinema-ivory);
+  --popover: rgba(13, 12, 18, 0.96);
+  --popover-foreground: var(--cinema-ivory);
+  --primary: var(--cinema-gold);
+  --primary-foreground: var(--cinema-ink);
+  --secondary: rgba(247, 238, 220, 0.08);
+  --secondary-foreground: var(--cinema-ivory);
+  --muted: rgba(247, 238, 220, 0.06);
+  --muted-foreground: rgba(247, 238, 220, 0.72);
+  --accent: rgba(79, 209, 255, 0.16);
+  --accent-foreground: var(--cinema-ivory);
+  --destructive: var(--cinema-red);
+  --border: rgba(247, 238, 220, 0.16);
+  --input: rgba(247, 238, 220, 0.08);
+  --ring: var(--cinema-screen);
+  --chart-1: var(--cinema-gold);
+  --chart-2: var(--cinema-screen);
+  --chart-3: var(--cinema-red);
+  --chart-4: #c68b3a;
+  --chart-5: #a94b57;
+  --radius: 1rem;
+  --sidebar: rgba(13, 12, 18, 0.9);
+  --sidebar-foreground: var(--cinema-ivory);
+  --sidebar-primary: var(--cinema-gold);
+  --sidebar-primary-foreground: var(--cinema-ink);
+  --sidebar-accent: rgba(247, 238, 220, 0.08);
+  --sidebar-accent-foreground: var(--cinema-ivory);
+  --sidebar-border: rgba(247, 238, 220, 0.16);
+  --sidebar-ring: var(--cinema-screen);
+
+  --text-display: clamp(2.3rem, 4.2vw, 3.1rem);
+  --text-heading: 1.15rem;
+  --text-body: 0.95rem;
+  --text-caption: 0.8rem;
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
-    @apply bg-background text-foreground;
+    @apply min-h-screen bg-background text-foreground antialiased;
+    background-image:
+      radial-gradient(circle at top left, rgba(79, 209, 255, 0.16), transparent 34%),
+      linear-gradient(135deg, rgba(247, 238, 220, 0.03), transparent),
+      linear-gradient(180deg, var(--cinema-ink), #090b11);
+    position: relative;
   }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      repeating-linear-gradient(
+        120deg,
+        rgba(247, 238, 220, 0.025) 0 1px,
+        transparent 1px 5px
+      );
+    mix-blend-mode: screen;
+    opacity: 0.35;
+  }
+
   html {
     @apply font-sans;
   }

@@ -1,0 +1,17 @@
+[
+  {
+    "id": "theatre-1",
+    "name": "Downtown Cinema",
+    "location": "42 Market Street, Downtown"
+  },
+  {
+    "id": "theatre-2",
+    "name": "Riverside Multiplex",
+    "location": "88 Riverwalk Avenue, Riverside"
+  },
+  {
+    "id": "theatre-3",
+    "name": "Harbor Light Theatre",
+    "location": "17 Pier Road, Harbor District"
+  }
+]

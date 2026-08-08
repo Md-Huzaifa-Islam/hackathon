@@ -1,0 +1,47 @@
+[
+  {
+    "id": "movie-1",
+    "title": "The Last Reel",
+    "genre": "Drama",
+    "duration_minutes": 118,
+    "poster_url": "https://picsum.photos/seed/last-reel/600/900",
+    "synopsis": "A washed-up projectionist faces one final chance to save the cinema that shaped his life.",
+    "rating": 4.6
+  },
+  {
+    "id": "movie-2",
+    "title": "Neon Circuit",
+    "genre": "Sci-Fi",
+    "duration_minutes": 104,
+    "poster_url": "https://picsum.photos/seed/neon-circuit/600/900",
+    "synopsis": "A rogue courier races across a glowing megacity to expose a conspiracy hidden in the network.",
+    "rating": 4.3
+  },
+  {
+    "id": "movie-3",
+    "title": "Quiet Harbor",
+    "genre": "Thriller",
+    "duration_minutes": 96,
+    "poster_url": "https://picsum.photos/seed/quiet-harbor/600/900",
+    "synopsis": "When fog rolls in over a sleepy harbor town, a family secret begins to surface.",
+    "rating": 4.1
+  },
+  {
+    "id": "movie-4",
+    "title": "Summer Signal",
+    "genre": "Romance",
+    "duration_minutes": 112,
+    "poster_url": "https://picsum.photos/seed/summer-signal/600/900",
+    "synopsis": "Two former friends collide again during a coastal festival and rediscover what they almost lost.",
+    "rating": 4.4
+  },
+  {
+    "id": "movie-5",
+    "title": "The Velvet Hour",
+    "genre": "Fantasy",
+    "duration_minutes": 128,
+    "poster_url": "https://picsum.photos/seed/velvet-hour/600/900",
+    "synopsis": "A young archivist finds a hidden map that opens a doorway into the city after midnight.",
+    "rating": 4.7
+  }
+]
