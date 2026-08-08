@@ -10,9 +10,11 @@ const STATUS_STYLES: Record<Seat["status"], string> = {
 
 export function SeatGrid({
   seats,
+  selectedSeatId,
   onSelectSeat,
 }: {
   seats: Seat[];
+  selectedSeatId?: string;
   onSelectSeat?: (seat: Seat) => void;
 }) {
   return (
@@ -25,7 +27,9 @@ export function SeatGrid({
           onClick={() => onSelectSeat?.(seat)}
           className={cn(
             "aspect-square rounded-md text-xs font-medium",
-            STATUS_STYLES[seat.status]
+            STATUS_STYLES[seat.status],
+            seat.id === selectedSeatId &&
+              "ring-2 ring-[color:var(--cinema-gold)] ring-offset-2 ring-offset-background"
           )}
         >
           {seat.row}
