@@ -53,6 +53,14 @@ services:
     image: ${GHCR_REPO:-ghcr.io/md-huzaifa-islam/heckathon-frontend}/frontend:${IMAGE_TAG:-latest}
     container_name: ${FRONTEND_CONTAINER_NAME:-cinemaseat-frontend}
     ports: !reset []
+    environment:
+      # Next.js's standalone server.js binds to $HOSTNAME when it's set,
+      # and Docker always sets it to the container's own hex ID — which
+      # only resolves on the `default` network, not `proxy` (the one
+      # Traefik actually routes through), so Traefik got connection
+      # refused (502) despite the container being perfectly healthy.
+      # Forcing 0.0.0.0 makes it listen on every interface.
+      HOSTNAME: "0.0.0.0"
     networks:
       - default
       - proxy
