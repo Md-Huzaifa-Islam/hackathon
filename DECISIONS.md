@@ -19,6 +19,34 @@ preserved during the merge (files were copied, not subtree-merged) — only
 the frontend repo's history carries forward. Acceptable since judges care
 about the final state, not commit archaeology.
 
+## 1b. External Postgres (Supabase/Neon/etc.) instead of an in-compose database
+
+**Options considered:** run Postgres as a `docker-compose.yml` service
+(original scaffold); use an external managed Postgres (Supabase/Neon/RDS)
+reached via `DATABASE_URL`, with no database container at all.
+
+**Chosen:** external managed Postgres. `docker-compose.yml` only runs Redis,
+the mock gateway, the backend, and the frontend — no `postgres` service.
+Authentication/authorization stays entirely on better-auth (its Prisma
+schema lives in the same external database); no Supabase Auth or other
+third-party auth provider is used — Supabase here is purely "a Postgres
+host," nothing more.
+
+**Why:** a managed provider gives connection pooling, backups, and a
+dashboard for free, which matters more once the app is actually deployed
+than a disposable container does. It also decouples the database's
+lifetime from the deploy host's — useful given the Poridhi lab's 12-hour
+hard cutoff (the VM disappearing doesn't have to mean the data does too).
+
+**Trade-off:** breaks the hackathon rule "`docker compose up` works from a
+clean clone with zero manual steps" if taken literally, since a personal
+`DATABASE_URL` can't be baked into a committed `.env.example` as a working
+default. Mitigated with `docker-compose.local.yml`, an optional overlay
+that layers in a disposable in-compose Postgres for a truly zero-config run
+(judging, offline work, CI-style smoke tests) — the real deployed instance
+uses the external database, but a clean clone still has a one-command path
+that needs no external account.
+
 ## 2. Seat hold concurrency: conditional UPDATE over explicit locking
 
 **Options considered:** Postgres `SELECT ... FOR UPDATE` row locks; a Redis

@@ -1,21 +1,4 @@
 services:
-  postgres:
-    image: postgres:16-alpine
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: cinemaseat
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
   redis:
     image: redis:7-alpine
     restart: unless-stopped
@@ -42,15 +25,19 @@ services:
     environment:
       NODE_ENV: production
       PORT: 4000
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/cinemaseat
+      # External DB (Supabase, Neon, RDS, etc.) — no in-compose postgres.
+      # Set DATABASE_URL in .env for real use; empty here only so a bare
+      # `docker compose up` doesn't hard-fail before you've read the README
+      # — the backend itself will refuse to boot without it (config/env.ts).
+      # For a zero-config local run, layer docker-compose.local.yml instead,
+      # which supplies a disposable in-compose Postgres.
+      DATABASE_URL: ${DATABASE_URL:-}
       REDIS_URL: redis://redis:6379
       HOLD_TTL_SECONDS: ${HOLD_TTL_SECONDS:-60}
       GATEWAY_URL: http://gateway:9000
       CALLBACK_BASE_URL: http://backend:4000
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-change-me-in-production}
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
       gateway:
@@ -68,6 +55,3 @@ services:
       NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:4000}
     depends_on:
       - backend
-
-volumes:
-  postgres_data:

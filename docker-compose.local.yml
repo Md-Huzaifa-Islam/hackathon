@@ -1,0 +1,37 @@
+# Optional local-Postgres overlay, layered on top of docker-compose.yml:
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
+#
+# docker-compose.yml itself expects an external DATABASE_URL (Supabase,
+# Neon, etc. — see .env.example) and has no database of its own. This file
+# exists so `docker compose up` can still satisfy the hackathon rule "works
+# from a clean clone with zero manual steps" without requiring a real
+# external database to be provisioned first — useful for judging, CI-style
+# smoke tests, or working offline. It is NOT meant for the actual deployed
+# instance; that should use your real external database.
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: cinemaseat
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/cinemaseat
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

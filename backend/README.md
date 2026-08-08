@@ -6,20 +6,28 @@ full spec and root `DECISIONS.md` for implementation choices and open items.
 
 ## Stack
 
-Node.js + TypeScript, Express, Prisma (Postgres), better-auth, Redis, Docker.
+Node.js + TypeScript, Express, Prisma, better-auth, Redis, Docker. Postgres
+is external (Supabase/Neon/RDS/etc.) — not run in `docker-compose.yml`.
 
 ## Quickstart (Docker)
 
 From the repo root:
 
 ```bash
-cp .env.example .env
+cp .env.example .env   # then set DATABASE_URL to a real Postgres connection string
 docker compose up --build
 ```
 
-This brings up Postgres, Redis, the mock payment/OTP gateway, the backend
-API, and the frontend. Migrations and seed data run automatically on backend
-container start (`docker-entrypoint.sh`). No manual steps required.
+No external database handy? Layer the local-Postgres overlay instead of
+setting `DATABASE_URL` — see the root README's "Zero-config local run":
+
+```bash
+docker compose -f ../docker-compose.yml -f ../docker-compose.local.yml up --build
+```
+
+Either way this brings up Redis, the mock payment/OTP gateway, the backend
+API, and the frontend, with migrations and seed data run automatically on
+backend container start (`docker-entrypoint.sh`).
 
 API is available at `http://localhost:4000`.
 
@@ -27,8 +35,8 @@ API is available at `http://localhost:4000`.
 
 ```bash
 npm install
-docker compose -f ../docker-compose.yml up postgres redis gateway -d
-cp .env.example .env   # then point DATABASE_URL/REDIS_URL/GATEWAY_URL at localhost
+docker compose -f ../docker-compose.yml up redis gateway -d
+cp .env.example .env   # point DATABASE_URL at your external Postgres, REDIS_URL/GATEWAY_URL at localhost
 npx prisma migrate dev
 npm run seed
 npm run dev
