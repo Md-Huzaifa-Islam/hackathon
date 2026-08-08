@@ -43,10 +43,22 @@ export interface PaymentService {
   startPayment(bookingId: string): Promise<Payment>;
 }
 
+export interface OtpSendResult {
+  sent: boolean;
+  // Set when sent=false because of the backend's 10s resend cooldown.
+  cooldownMs?: number;
+}
+
+export interface OtpService {
+  sendOtp(phone: string, ref: string): Promise<OtpSendResult>;
+  verifyOtp(ref: string, code: string): Promise<boolean>;
+}
+
 export interface CinemaServices {
   movies: MovieService;
   shows: ShowService;
   seats: SeatService;
   bookings: BookingService;
   payments: PaymentService;
+  otp: OtpService;
 }

@@ -8,9 +8,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { HoldTimer } from "@/components/booking/hold-timer";
 import { PaymentStatus } from "@/components/booking/payment-status";
+import { PhoneVerificationDialog } from "@/components/booking/phone-verification-dialog";
 import { SeatLegend } from "@/components/booking/seat-legend";
 import { SeatMap } from "@/components/booking/seat-map";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useCreateBooking } from "@/hooks/use-create-booking";
 import { useHoldCountdown } from "@/hooks/use-hold-countdown";
 import { useHoldSeat } from "@/hooks/use-hold-seat";
 import { useAuth } from "@/lib/auth";
@@ -19,7 +21,7 @@ import { useSeatMap } from "@/hooks/use-seat-map";
 import { useShow } from "@/hooks/use-show";
 import { useStartPayment } from "@/hooks/use-start-payment";
 import { useQueryClient } from "@tanstack/react-query";
-import type { Seat } from "@/types";
+import type { Booking, Seat } from "@/types";
 
 export function SeatSelectionPage({ showtimeId }: { showtimeId: string }) {
   const router = useRouter();
@@ -28,12 +30,15 @@ export function SeatSelectionPage({ showtimeId }: { showtimeId: string }) {
   const seatQuery = useSeatMap(showtimeId);
   const movieQuery = useMovie(showQuery.data?.movieId ?? "");
   const holdSeatMutation = useHoldSeat();
+  const createBookingMutation = useCreateBooking();
   const startPaymentMutation = useStartPayment();
   const auth = useAuth();
 
   const [selectedSeatId, setSelectedSeatId] = useState<string | null>(null);
   const [heldSeat, setHeldSeat] = useState<Seat | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [pendingBooking, setPendingBooking] = useState<Booking | null>(null);
+  const [verifyOpen, setVerifyOpen] = useState(false);
 
   const selectedSeat = useMemo(
     () => seatQuery.data?.seats.find((seat) => seat.id === selectedSeatId) ?? null,
@@ -96,15 +101,26 @@ export function SeatSelectionPage({ showtimeId }: { showtimeId: string }) {
     }
   }
 
+  // Pay creates the booking, then requires phone/OTP verification (mock
+  // gateway) before actually starting the Stripe Checkout session -- see
+  // handleVerified below for the second half of this flow.
   async function handlePay() {
     if (!heldSeat || !showQuery.data) {
+      return;
+    }
+
+    // Reopening after the user backed out of phone verification (or a
+    // double-click) -- reuse the booking already created for this seat
+    // instead of creating a second, orphaned PENDING_PAYMENT row.
+    if (pendingBooking && pendingBooking.seatIds[0] === heldSeat.id) {
+      setVerifyOpen(true);
       return;
     }
 
     const price = showQuery.data.price ?? Math.round((showQuery.data.priceCents ?? 0) / 100);
 
     try {
-      const booking = await startPaymentMutation.mutateAsync({
+      const booking = await createBookingMutation.mutateAsync({
         showtimeId,
         movieId: showQuery.data.movieId,
         theatreId: showQuery.data.theatreId,
@@ -113,7 +129,27 @@ export function SeatSelectionPage({ showtimeId }: { showtimeId: string }) {
         currency: showQuery.data.currency ?? "BDT",
       });
 
-      router.push(`/bookings/${booking.id}`);
+      setPendingBooking(booking);
+      setVerifyOpen(true);
+    } catch {
+      setNotice("Unable to start checkout. Please try again.");
+    }
+  }
+
+  async function handleVerified() {
+    if (!pendingBooking) {
+      return;
+    }
+
+    try {
+      const payment = await startPaymentMutation.mutateAsync(pendingBooking.id);
+      // checkoutUrl present -> useStartPayment already redirected the
+      // browser to Stripe. Its absence means the booking was already
+      // CONFIRMED (see paymentApi's PayResponse comment) -- go straight to
+      // the confirmation page instead.
+      if (!payment.checkoutUrl) {
+        router.push(`/bookings/${pendingBooking.id}`);
+      }
     } catch {
       setNotice("Payment confirmation is taking longer than expected.");
     }
@@ -179,8 +215,16 @@ export function SeatSelectionPage({ showtimeId }: { showtimeId: string }) {
               <div className="flex items-center justify-between"><span>Seat</span><span>{heldSeat?.id ?? "—"}</span></div>
               <div className="flex items-center justify-between"><span>Total</span><span>{showQuery.data?.price ?? Math.round((showQuery.data?.priceCents ?? 0) / 100)} BDT</span></div>
               {heldSeat ? <HoldTimer expiresAt={heldSeat.holdExpiresAt} /> : null}
-              <Button className="w-full" disabled={!heldSeat || startPaymentMutation.isPending} onClick={handlePay}>
-                {startPaymentMutation.isPending ? "Processing payment..." : `Pay ${showQuery.data?.price ?? Math.round((showQuery.data?.priceCents ?? 0) / 100)} BDT`}
+              <Button
+                className="w-full"
+                disabled={!heldSeat || createBookingMutation.isPending || startPaymentMutation.isPending}
+                onClick={handlePay}
+              >
+                {createBookingMutation.isPending
+                  ? "Preparing checkout..."
+                  : startPaymentMutation.isPending
+                    ? "Processing payment..."
+                    : `Pay ${showQuery.data?.price ?? Math.round((showQuery.data?.priceCents ?? 0) / 100)} BDT`}
               </Button>
             </CardContent>
           </Card>
@@ -188,6 +232,13 @@ export function SeatSelectionPage({ showtimeId }: { showtimeId: string }) {
           {startPaymentMutation.data ? <PaymentStatus status={startPaymentMutation.data.status} /> : null}
         </div>
       </section>
+
+      <PhoneVerificationDialog
+        open={verifyOpen}
+        onOpenChange={setVerifyOpen}
+        bookingRef={pendingBooking?.reference ?? ""}
+        onVerified={handleVerified}
+      />
     </main>
   );
 }

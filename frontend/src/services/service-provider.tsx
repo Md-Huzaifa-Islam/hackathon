@@ -4,6 +4,7 @@ import { createContext, useContext, useMemo } from "react";
 import type { CinemaServices } from "./contracts";
 import { createBookingApiService } from "./bookingApi";
 import { createMovieApiService } from "./movieApi";
+import { createOtpApiService } from "./otpApi";
 import { createPaymentApiService } from "./paymentApi";
 import { createSeatApiService } from "./seatApi";
 import { createShowApiService } from "./showApi";
@@ -17,6 +18,7 @@ function createCinemaServices(): CinemaServices {
     seats: createSeatApiService(),
     bookings: createBookingApiService(),
     payments: createPaymentApiService(),
+    otp: createOtpApiService(),
   };
 }
 

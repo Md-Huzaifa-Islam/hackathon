@@ -5,12 +5,27 @@ import { Alert, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PaymentStatus } from "@/components/booking/payment-status";
 import { useBooking } from "@/hooks/use-booking";
+import { useCancelBooking } from "@/hooks/use-cancel-booking";
 import { useMovie } from "@/hooks/use-movie";
 import { useShow } from "@/hooks/use-show";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+
+// Cancelling is only meaningful while there's still something to undo: a
+// hold/PENDING booking to release, or a CONFIRMED one to refund. Terminal
+// states (already cancelled, expired, refunded, failed) have nothing left
+// for the button to do.
+const CANCELLABLE_STATUSES = new Set(["PENDING", "CONFIRMED"]);
 
 export function BookingPage({ bookingId }: { bookingId: string }) {
   const router = useRouter();
@@ -20,6 +35,8 @@ export function BookingPage({ bookingId }: { bookingId: string }) {
   const showQuery = useShow(booking?.showtimeId ?? "");
   const movie = movieQuery.data;
   const show = showQuery.data;
+  const cancelMutation = useCancelBooking();
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const refundState = useMemo(() => {
     if (booking?.status === "REFUNDED") return { label: "Refunded", tone: "default" as const };
     if (booking?.status === "FAILED") return { label: "Refund failed", tone: "destructive" as const };
@@ -86,11 +103,31 @@ export function BookingPage({ bookingId }: { bookingId: string }) {
           </dl>
           <div className="rounded-2xl border border-border/70 bg-muted/30 p-4 text-sm text-muted-foreground">
             <div className="font-semibold text-foreground">Cancellation & refund</div>
-            <p className="mt-2">Refund eligibility depends on the booking’s cancellation conditions. CinemaSeat will surface the latest backend-confirmed refund state here.</p>
+            <p className="mt-2">
+              {booking.status === "CONFIRMED"
+                ? "Cancelling a confirmed booking releases your seat and automatically refunds the payment through Stripe."
+                : "Cancelling releases your held seat immediately."}
+            </p>
           </div>
-          {booking.status === "PENDING" ? (
-            <Button onClick={() => bookingQuery.refetch()}>Check again</Button>
+          {cancelMutation.isError ? (
+            <Alert variant="destructive">
+              <AlertTitle>Couldn&apos;t cancel this booking. Please try again.</AlertTitle>
+            </Alert>
           ) : null}
+          <div className="flex flex-wrap gap-3">
+            {booking.status === "PENDING" ? (
+              <Button variant="secondary" onClick={() => bookingQuery.refetch()}>Check again</Button>
+            ) : null}
+            {CANCELLABLE_STATUSES.has(booking.status) ? (
+              <Button variant="destructive" onClick={() => setConfirmOpen(true)} disabled={cancelMutation.isPending}>
+                {cancelMutation.isPending
+                  ? "Cancelling..."
+                  : booking.status === "CONFIRMED"
+                    ? "Cancel & refund"
+                    : "Cancel booking"}
+              </Button>
+            ) : null}
+          </div>
         </CardContent>
       </Card>
 
@@ -99,6 +136,38 @@ export function BookingPage({ bookingId }: { bookingId: string }) {
         <Button onClick={() => router.push("/movies")}>Browse more movies</Button>
         <Button variant="outline" onClick={() => router.push("/contact")}>Contact support</Button>
       </div>
+
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel this booking?</DialogTitle>
+            <DialogDescription>
+              {booking.status === "CONFIRMED"
+                ? "Your seat will be released and your payment refunded through Stripe. This can't be undone."
+                : "Your held seat will be released immediately. This can't be undone."}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmOpen(false)}>
+              Keep booking
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={cancelMutation.isPending}
+              onClick={async () => {
+                try {
+                  await cancelMutation.mutateAsync(bookingId);
+                  setConfirmOpen(false);
+                } catch {
+                  // cancelMutation.isError renders the inline alert above.
+                }
+              }}
+            >
+              {cancelMutation.isPending ? "Cancelling..." : "Yes, cancel"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }

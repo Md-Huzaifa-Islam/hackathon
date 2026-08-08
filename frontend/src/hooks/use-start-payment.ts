@@ -1,15 +1,16 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCinemaServices } from "@/services/service-provider";
-import type { BookingCreateInput } from "@/services/contracts";
 
+// Pays for an already-created booking (see useCreateBooking) — split out so
+// a phone/OTP verification step can sit between "booking exists" and
+// "payment started" without either mutation knowing about the other.
 export function useStartPayment() {
-  const { bookings, payments } = useCinemaServices();
+  const { payments } = useCinemaServices();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: BookingCreateInput) => {
-      const booking = await bookings.createBooking(input);
-      const payment = await payments.startPayment(booking.id);
+    mutationFn: async (bookingId: string) => {
+      const payment = await payments.startPayment(bookingId);
 
       // Stripe Checkout is a hosted page — leave the SPA entirely rather
       // than polling in place. Stripe redirects back to
@@ -17,14 +18,12 @@ export function useStartPayment() {
       // status-polling flow picks up once the webhook confirms it.
       if (payment.checkoutUrl) {
         window.location.href = payment.checkoutUrl;
-        return booking;
       }
 
-      const refreshedBooking = await bookings.getBooking(booking.id);
-      return refreshedBooking ?? booking;
+      return payment;
     },
-    onSuccess: (booking) => {
-      queryClient.invalidateQueries({ queryKey: ["booking", booking.id] });
+    onSuccess: (_payment, bookingId) => {
+      queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
     },
   });
 }
