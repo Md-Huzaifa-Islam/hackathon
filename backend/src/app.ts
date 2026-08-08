@@ -35,5 +35,17 @@ export function createApp() {
     res.status(404).json({ error: "not_found" });
   });
 
+  // Last-resort net for anything asyncHandler forwards via next(err) (or a
+  // synchronous throw). Without this, Express's own default error handler
+  // would still respond, but logs nothing here and leaks stack traces to the
+  // client in non-strict configs — this guarantees a clean 500 and a log
+  // line instead of a crashed process or a raw error dump.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  app.use((err: unknown, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    req.log?.error({ err }, "unhandled route error");
+    if (res.headersSent) return;
+    res.status(500).json({ error: "internal_error" });
+  });
+
   return app;
 }
