@@ -38,6 +38,17 @@ export const env = {
   // accounts — override once your Stripe account's country/currency setup
   // confirms BDT works, otherwise amounts are charged in USD.
   stripeCurrency: (process.env.STRIPE_CURRENCY ?? "usd").toLowerCase(),
+  // Seat prices are entered and displayed in BDT everywhere in the app
+  // (seed data, the seat map, booking pages), but Stripe settles in
+  // stripeCurrency (usd by default — BDT isn't a supported Stripe
+  // settlement currency on most accounts). Without a conversion, the raw
+  // BDT number was being charged as if it were that many USD units (a 450
+  // BDT seat charged as $4.50 flat, not an actual converted equivalent).
+  // This is a static approximate rate, not a live FX lookup — accurate
+  // enough for a hackathon demo, but should be swapped for a real-time
+  // rate (or a payment-provider FX feature) before this handles real money
+  // at scale, since it will drift from the market rate over time.
+  bdtToUsdRate: Number(process.env.BDT_TO_USD_RATE ?? "0.0083"),
   // Where Stripe Checkout redirects the browser back to after payment
   // (success or cancel) — must be the frontend's public URL, not the API's.
   frontendUrl: process.env.FRONTEND_URL ?? "http://localhost:3000",

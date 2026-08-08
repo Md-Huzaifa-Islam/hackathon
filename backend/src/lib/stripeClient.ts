@@ -3,6 +3,16 @@ import { env } from "@/config/env.js";
 
 export const stripe = new Stripe(env.stripeSecretKey);
 
+// `amount` arrives here in BDT (the app's one native pricing currency —
+// see env.ts's bdtToUsdRate comment for why). Converting at this single
+// choke point, rather than wherever `amount` originates, keeps every
+// display/DB value honestly in BDT while still charging Stripe the actual
+// equivalent instead of that many raw units of a different currency.
+function toStripeUnitAmount(bdtAmount: number): number {
+  const converted = env.stripeCurrency === "bdt" ? bdtAmount : bdtAmount * env.bdtToUsdRate;
+  return Math.round(converted * 100);
+}
+
 // One Checkout Session per payment attempt. idempotencyKey (our Payment
 // row's id) protects against a double-click or client retry creating two
 // sessions for the same attempt — Stripe returns the original session
@@ -27,7 +37,7 @@ export function createCheckoutSession(input: {
           quantity: 1,
           price_data: {
             currency: env.stripeCurrency,
-            unit_amount: Math.round(input.amount * 100),
+            unit_amount: toStripeUnitAmount(input.amount),
             product_data: { name: `CinemaSeat booking ${input.bookingRef} — seat ${input.seatLabel}` },
           },
         },
