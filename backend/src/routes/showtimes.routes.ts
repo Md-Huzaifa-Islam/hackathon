@@ -6,6 +6,20 @@ import { releaseExpiredHolds } from "@/jobs/holdSweeper.js";
 
 export const showtimesRouter = Router();
 
+// GET /showtimes/:id — a single showtime with its movie/screen/theatre, used
+// by the seat-selection and booking-detail pages to render context around
+// the seat map without a second round trip per field.
+showtimesRouter.get("/showtimes/:id", async (req, res) => {
+  const showtime = await prisma.showtime.findUnique({
+    where: { id: req.params.id },
+    include: { movie: true, screen: { include: { theatre: true } } },
+  });
+  if (!showtime) {
+    return res.status(404).json({ error: "showtime_not_found" });
+  }
+  res.json(showtime);
+});
+
 // GET /showtimes/:id/seats — the seat map endpoint (documented verbatim in README)
 showtimesRouter.get("/showtimes/:id/seats", async (req, res) => {
   // Lazily flip expired holds back to AVAILABLE before returning the map —

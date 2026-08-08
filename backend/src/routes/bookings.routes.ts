@@ -130,12 +130,32 @@ bookingsRouter.post("/bookings/:id/pay", requireAuth, async (req, res) => {
   res.status(202).json({ status: "PENDING", paymentId: payment.id });
 });
 
+// GET /bookings — lists the current user's bookings, newest first, for the
+// "My Bookings" page.
+bookingsRouter.get("/bookings", requireAuth, async (req, res) => {
+  const userId = userIdOf(req);
+  const bookings = await prisma.booking.findMany({
+    where: { userId },
+    include: {
+      seats: { include: { seat: true } },
+      payments: true,
+      showtime: { include: { movie: true, screen: { include: { theatre: true } } } },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+  res.json(bookings);
+});
+
 // GET /bookings/:id — polled by the client for payment/booking status.
 bookingsRouter.get("/bookings/:id", requireAuth, async (req, res) => {
   const userId = userIdOf(req);
   const booking = await prisma.booking.findUnique({
     where: { id: req.params.id },
-    include: { seats: { include: { seat: true } }, payments: true },
+    include: {
+      seats: { include: { seat: true } },
+      payments: true,
+      showtime: { include: { movie: true, screen: { include: { theatre: true } } } },
+    },
   });
   if (!booking || booking.userId !== userId) {
     return res.status(404).json({ error: "booking_not_found" });

@@ -1,18 +1,7 @@
 import { useEffect, useState } from "react";
 
-function getInitialSecondsLeft(expiresAt?: string) {
-  if (!expiresAt) {
-    return null;
-  }
-
-  const expiry = new Date(expiresAt).getTime();
-  return Math.max(0, Math.round((expiry - Date.now()) / 1000));
-}
-
 export function useHoldCountdown(expiresAt?: string) {
-  const [secondsLeft, setSecondsLeft] = useState<number | null>(() =>
-    getInitialSecondsLeft(expiresAt)
-  );
+  const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
 
   useEffect(() => {
     if (!expiresAt) {
@@ -26,14 +15,11 @@ export function useHoldCountdown(expiresAt?: string) {
       setSecondsLeft(remaining);
     };
 
-    const timeoutId = window.setTimeout(tick, 0);
-    const intervalId = window.setInterval(tick, 1000);
-
-    return () => {
-      window.clearTimeout(timeoutId);
-      window.clearInterval(intervalId);
-    };
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
   }, [expiresAt]);
 
-  return { secondsLeft, expired: secondsLeft === 0 };
+  const active = Boolean(expiresAt);
+  return { secondsLeft: active ? secondsLeft : null, expired: active && secondsLeft === 0 };
 }

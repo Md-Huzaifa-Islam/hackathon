@@ -1,14 +1,74 @@
 # Production override: replaces `build:` with the images published to GHCR
-# by .github/workflows/cd.yml. Used on the deploy host as:
+# by .github/workflows/cd.yml, and wires the frontend + backend into an
+# externally managed Traefik instance instead of publishing raw host ports.
+# Used on the deploy host as:
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 #
 # GHCR_REPO defaults to this repo's own package path; IMAGE_TAG defaults to
 # `latest` (CD also tags every push with the commit SHA if you want to pin).
+#
+# Requires an external Docker network named `proxy` that Traefik itself is
+# attached to (create once with `docker network create proxy` if it doesn't
+# already exist from another project). See DEPLOYMENT.md.
+networks:
+  proxy:
+    external: true
+
 services:
+  redis:
+    ports: !reset []
+
+  gateway:
+    ports: !reset []
+
   backend:
     build: !reset null
     image: ${GHCR_REPO:-ghcr.io/md-huzaifa-islam/heckathon-frontend}/backend:${IMAGE_TAG:-latest}
+    container_name: ${BACKEND_CONTAINER_NAME:-cinemaseat-backend}
+    ports: !reset []
+    networks:
+      - default
+      - proxy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://127.0.0.1:4000/health || exit 1",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.${BACKEND_ROUTER_NAME:-cinemaseat-backend}.rule=Host(`${API_DOMAIN}`)
+      - traefik.http.routers.${BACKEND_ROUTER_NAME:-cinemaseat-backend}.entrypoints=websecure
+      - traefik.http.routers.${BACKEND_ROUTER_NAME:-cinemaseat-backend}.tls=true
+      - traefik.http.routers.${BACKEND_ROUTER_NAME:-cinemaseat-backend}.tls.certresolver=letsencrypt
+      - traefik.http.services.${BACKEND_SERVICE_NAME:-cinemaseat-backend}.loadbalancer.server.port=4000
 
   frontend:
     build: !reset null
     image: ${GHCR_REPO:-ghcr.io/md-huzaifa-islam/heckathon-frontend}/frontend:${IMAGE_TAG:-latest}
+    container_name: ${FRONTEND_CONTAINER_NAME:-cinemaseat-frontend}
+    ports: !reset []
+    networks:
+      - default
+      - proxy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://127.0.0.1:3000 || exit 1",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.${FRONTEND_ROUTER_NAME:-cinemaseat-frontend}.rule=Host(`${DOMAIN}`)
+      - traefik.http.routers.${FRONTEND_ROUTER_NAME:-cinemaseat-frontend}.entrypoints=websecure
+      - traefik.http.routers.${FRONTEND_ROUTER_NAME:-cinemaseat-frontend}.tls=true
+      - traefik.http.routers.${FRONTEND_ROUTER_NAME:-cinemaseat-frontend}.tls.certresolver=letsencrypt
+      - traefik.http.services.${FRONTEND_SERVICE_NAME:-cinemaseat-frontend}.loadbalancer.server.port=3000

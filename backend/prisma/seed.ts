@@ -38,13 +38,16 @@ async function main() {
     }
   }
 
-  const movies = await prisma.$transaction([
+  const nowShowingMovies = await prisma.$transaction([
     prisma.movie.create({
       data: {
         title: "Zero to Production",
         description: "A team races to ship a booking system before the premiere.",
         durationMin: 118,
         genre: "Drama",
+        rating: "8.1",
+        poster: "/movies/midnight-protocol.svg",
+        releaseType: "NOW_SHOWING",
       },
     }),
     prisma.movie.create({
@@ -53,15 +56,62 @@ async function main() {
         description: "One seat. A hundred requests. Only one can win.",
         durationMin: 102,
         genre: "Thriller",
+        rating: "7.8",
+        poster: "/movies/project-orion.svg",
+        releaseType: "NOW_SHOWING",
       },
     }),
   ]);
 
+  const newReleaseMovies = await prisma.$transaction([
+    prisma.movie.create({
+      data: {
+        title: "Last Signal",
+        description: "A lone operator picks up a transmission that shouldn't exist.",
+        durationMin: 109,
+        genre: "Sci-Fi",
+        rating: "7.5",
+        poster: "/movies/last-signal.svg",
+        releaseType: "NEW_RELEASE",
+        releaseDate: new Date(),
+      },
+    }),
+    prisma.movie.create({
+      data: {
+        title: "Harbor of Echoes",
+        description: "A coastal town confronts a decades-old secret.",
+        durationMin: 124,
+        genre: "Mystery",
+        rating: "8.4",
+        poster: "/movies/harbor-of-echoes.svg",
+        releaseType: "NEW_RELEASE",
+        releaseDate: new Date(),
+      },
+    }),
+  ]);
+
+  await prisma.$transaction([
+    prisma.movie.create({
+      data: {
+        title: "Dhaka After Dark",
+        description: "The city never sleeps, and neither does its underworld.",
+        durationMin: 131,
+        genre: "Action",
+        rating: "TBA",
+        poster: "/movies/dhaka-after-dark.svg",
+        releaseType: "COMING_SOON",
+        releaseDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30),
+      },
+    }),
+  ]);
+
+  const bookableMovies = [...nowShowingMovies, ...newReleaseMovies];
+
   const now = new Date();
   const showtimes = [];
-  for (const movie of movies) {
+  for (const [movieIndex, movie] of bookableMovies.entries()) {
     for (const screen of [screen1, screen2]) {
-      const startsAt = new Date(now.getTime() + 1000 * 60 * 60 * 24);
+      const startsAt = new Date(now.getTime() + 1000 * 60 * 60 * 24 * (1 + movieIndex));
       const showtime = await prisma.showtime.create({
         data: {
           movieId: movie.id,
@@ -83,7 +133,7 @@ async function main() {
     }
   }
 
-  console.log(`Seeded ${movies.length} movies, ${showtimes.length} showtimes.`);
+  console.log(`Seeded ${bookableMovies.length + 1} movies, ${showtimes.length} showtimes.`);
 }
 
 main()

@@ -72,14 +72,23 @@ model Verification {
   @@map("verifications")
 }
 
+enum ReleaseType {
+  NOW_SHOWING
+  NEW_RELEASE
+  COMING_SOON
+}
+
 model Movie {
-  id          String   @id @default(uuid())
+  id          String      @id @default(uuid())
   title       String
   poster      String?
   description String?
   durationMin Int
   genre       String?
-  createdAt   DateTime @default(now())
+  rating      String?
+  releaseType ReleaseType @default(NOW_SHOWING)
+  releaseDate DateTime?
+  createdAt   DateTime    @default(now())
 
   showtimes Showtime[]
 

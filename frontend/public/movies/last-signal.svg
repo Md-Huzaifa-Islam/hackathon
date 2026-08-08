@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1200" fill="none">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0f172a"/>
+      <stop offset="1" stop-color="#1d4ed8"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="1200" fill="url(#g)"/>
+  <text x="80" y="140" fill="#93c5fd" font-family="Arial, sans-serif" font-size="48" font-weight="700">The Last Signal</text>
+  <path d="M120 760C220 620 310 620 410 760C510 900 600 900 700 760" stroke="#bfdbfe" stroke-width="12" stroke-linecap="round"/>
+  <rect x="90" y="820" width="620" height="160" rx="28" fill="#0f172a" fill-opacity="0.75"/>
+  <text x="400" y="915" text-anchor="middle" fill="#fafafa" font-family="Arial, sans-serif" font-size="38">Sci-Fi / Mystery</text>
+</svg>

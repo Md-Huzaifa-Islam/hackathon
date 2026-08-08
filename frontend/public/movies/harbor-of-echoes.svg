@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1200" fill="none">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0f172a"/>
+      <stop offset="1" stop-color="#334155"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="1200" fill="url(#g)"/>
+  <text x="80" y="140" fill="#cbd5e1" font-family="Arial, sans-serif" font-size="44" font-weight="700">Harbor of Echoes</text>
+  <path d="M100 680C220 620 300 620 420 680C540 740 620 740 700 680" stroke="#38bdf8" stroke-width="10" stroke-linecap="round"/>
+  <rect x="90" y="820" width="620" height="160" rx="28" fill="#0f172a" fill-opacity="0.7"/>
+  <text x="400" y="915" text-anchor="middle" fill="#fafafa" font-family="Arial, sans-serif" font-size="38">Drama / Fantasy</text>
+</svg>

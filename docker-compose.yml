@@ -37,6 +37,14 @@ services:
       GATEWAY_URL: http://gateway:9000
       CALLBACK_BASE_URL: http://backend:4000
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-change-me-in-production}
+      # Must match the mock gateway's own GATEWAY_SECRET (its default is
+      # z2p-2026-secret, same as our fallback) — used to verify the
+      # X-Signature header on /payments/callback.
+      GATEWAY_SECRET: ${GATEWAY_SECRET:-z2p-2026-secret}
+      # better-auth's allowed origins for the browser session cookie — the
+      # frontend's own URL, not NEXT_PUBLIC_API_BASE_URL (which is the
+      # backend's URL). Comma-separated if you need more than one.
+      TRUSTED_ORIGINS: ${TRUSTED_ORIGINS:-http://localhost:3000}
     depends_on:
       redis:
         condition: service_healthy

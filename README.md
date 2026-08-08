@@ -162,6 +162,9 @@ every push to `main`, then (once `DEPLOY_ENABLED`/`DEPLOY_HOST`/
 runs `docker compose pull && up -d` against `docker-compose.prod.yml`, which
 swaps `build:` for the published images.
 
+See [`DEPLOYMENT.md`](./DEPLOYMENT.md) for the full step-by-step (VPS/Traefik
+setup, required secrets and variables, first deploy, rollback).
+
 **Deployed URL: TBD** (target: Poridhi VM, per hackathon guidance).
 
 ## Status

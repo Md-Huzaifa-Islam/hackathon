@@ -47,6 +47,35 @@ that layers in a disposable in-compose Postgres for a truly zero-config run
 uses the external database, but a clean clone still has a one-command path
 that needs no external account.
 
+## 1c. Capping Prisma's connection pool against the external DB
+
+**Options considered:** leave Prisma's default connection pool size
+(`num_cpus * 2 + 1`) uncapped; explicitly cap it via `?connection_limit=N`
+on `DATABASE_URL`; switch to Supabase's transaction pooler (port 6543)
+instead of the session pooler.
+
+**Chosen:** cap it (`?connection_limit=10&pool_timeout=30`) on the session
+pooler URL.
+
+**Why:** discovered by actually running Milestone 4 Scenario A (100
+concurrent hold requests) against the real deployed-shape setup, not just
+against a local Postgres. Uncapped, Prisma tried to open more physical
+connections than the free-tier pooler allows, and requests failed with
+`P1001` ("can't reach database server") instead of the intended clean `409`
+— a real correctness gap under exactly the load pattern that gets graded.
+Capping the pool makes Prisma queue excess requests through the connections
+it's allowed instead of opening more. Rejected the transaction-pooler
+alternative for the same reason as decision #1b: it doesn't support the
+session-level features `prisma migrate` needs, which would require a
+second `DIRECT_URL` just for migrations — more moving parts than tuning one
+number.
+
+**Trade-off:** the 100-concurrent-hold scenario went from ~1s (local
+Postgres, uncapped) to ~25s (remote pooler, capped at 10) — latency traded
+for correctness. Still verified exactly one success and 99 clean rejections
+either way; `tests/integration/hold-concurrency.test.ts`'s timeout was
+raised to 30s to account for this against a real remote DB.
+
 ## 2. Seat hold concurrency: conditional UPDATE over explicit locking
 
 **Options considered:** Postgres `SELECT ... FOR UPDATE` row locks; a Redis
