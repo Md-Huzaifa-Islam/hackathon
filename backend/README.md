@@ -44,17 +44,21 @@ npm run dev
   GET /showtimes/:id/seats
   ```
 
-- **Hold a seat**
+- **Hold a seat** (requires an authenticated session)
 
   ```
   POST /showtimes/:id/seats/:seatId/hold
   ```
 
-  (Currently a stub — see `src/routes/showtimes.routes.ts`.)
+  Atomic `UPDATE ... WHERE status = 'AVAILABLE'` — exactly one concurrent
+  request wins, everyone else gets a `409` with the current seat status.
 
 - `GET /movies`, `GET /movies/:id/showtimes`
-- `POST /bookings/:id/pay`, `POST /payments/callback`
-- `POST /otp/send`, `POST /otp/verify`
+- `POST /bookings` — turn held seats into a `PENDING_PAYMENT` booking
+- `GET /bookings/:id` — poll for booking/payment status
+- `POST /bookings/:id/pay` — kicks off the gateway charge, returns `202 PENDING` immediately
+- `POST /payments/callback` — gateway's async payment webhook (HMAC-verified, idempotent)
+- `POST /otp/send`, `POST /otp/verify`, `POST /otp/callback`, `GET /otp/status/:ref`
 - `POST /bookings/:id/cancel`
 
 ## Environment variables
@@ -91,9 +95,16 @@ tests/
 
 ## Status
 
-This is a scaffold: tech stack installed, folder structure and routing wired
-up, Prisma schema modeled per the spec, Docker Compose stack complete
-(api + postgres + redis + gateway). Core business logic (atomic seat hold,
-async payment flow, idempotent callback handling, hold-expiry sweeper) is
-stubbed with `501`s and TODOs — see `DECISIONS.md` and inline comments in
-`src/routes/`.
+Core booking flow is implemented and tested against the real gateway
+container: hold (atomic conditional update), booking creation, async pay +
+signature-verified idempotent callback, OTP send/verify/resend, and a
+belt-and-suspenders hold-expiry sweeper (lazy on read + a 5s background
+job). See `DECISIONS.md` for the concurrency/idempotency design and
+`tests/integration/` for the concurrency-race and duplicate-callback tests
+that exercise it.
+
+Not yet done: rate limiting / input validation hardening, refund-callback
+handling on the `Payment` row (refund is fired but its `REFUNDED` callback
+reuses the same idempotent path, untested), and the actual deploy step in
+`cd.yml` is wired but inert until `DEPLOY_HOST`/`DEPLOY_USER`/`DEPLOY_SSH_KEY`
+secrets and the `DEPLOY_ENABLED` repo variable are set.

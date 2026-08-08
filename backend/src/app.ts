@@ -15,7 +15,16 @@ export function createApp() {
   // better-auth handles its own body parsing; must be mounted before express.json().
   app.all("/api/auth/*", toNodeHandler(auth));
 
-  app.use(express.json());
+  // Capture the raw body alongside the parsed one — the gateway callback's
+  // HMAC signature is computed over the exact bytes sent, and re-serialising
+  // parsed JSON does not reliably reproduce them.
+  app.use(
+    express.json({
+      verify: (req, _res, buf) => {
+        (req as express.Request & { rawBody?: Buffer }).rawBody = buf;
+      },
+    }),
+  );
   app.use(router);
 
   app.use((_req, res) => {

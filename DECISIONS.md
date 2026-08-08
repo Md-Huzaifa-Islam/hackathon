@@ -61,15 +61,50 @@ a restart or multiple API replicas.
 violations and treat them as a successful no-op (still return 200), rather
 than treating them as errors.
 
-## Open items
+## 4. Gateway callback signature verification over the raw body
 
-- **better-auth Prisma schema**: `User`/`Session` models are a manual
-  approximation of what better-auth's Prisma adapter expects — needs
-  reconciling against `npx @better-auth/cli generate` before relying on auth.
-- **Hold-expiry sweeper**: currently lazy-checked on every seat-map read
-  (`backend/src/routes/showtimes.routes.ts`). A periodic background sweeper
-  (`backend/src/jobs/`) should be added as a belt-and-suspenders measure so
-  seats free up even without a read hitting them.
-- **Booking/pay/callback business logic**: routes are scaffolded and return
-  `501`; the actual hold/pay/callback logic described in decisions #2 and #3
-  above is not yet implemented — see inline `TODO`s in `backend/src/routes/`.
+**Options considered:** trust the callback unauthenticated (any POST to
+`/payments/callback` confirms a booking); verify `X-Signature` against
+`JSON.stringify(req.body)` (the parsed-then-re-serialized body); verify
+against the exact raw bytes received.
+
+**Chosen:** `express.json({ verify })` captures the raw `Buffer` alongside
+parsing, and `verifyGatewaySignature` (`backend/src/lib/gatewaySignature.ts`)
+HMACs that buffer, not the re-serialized object.
+
+**Why:** anyone on the internet can POST to a public webhook path — without
+signature verification, forging a `SUCCEEDED` callback confirms a booking
+for free. Re-serializing parsed JSON doesn't reliably reproduce the original
+bytes (key order, whitespace), so the raw buffer is the only body that's
+guaranteed to match what the gateway actually signed.
+
+**Trade-off:** requires the raw-body-capturing middleware to run before any
+other body-consuming middleware, which is easy to silently break if routes
+are reordered — worth a comment in `app.ts`, which it has.
+
+## Open items (resolved)
+
+- ~~**better-auth Prisma schema**~~: `User`/`Account`/`Session`/`Verification`
+  now match better-auth's expected Prisma adapter shape (see schema.prisma);
+  verified against a real sign-up/sign-in round trip.
+- ~~**Hold-expiry sweeper**~~: `backend/src/jobs/holdSweeper.ts` runs a 5s
+  background sweep in addition to the lazy per-read check.
+- ~~**Booking/pay/callback business logic**~~: implemented in
+  `bookings.routes.ts` / `payments.routes.ts` and covered by
+  `tests/integration/hold-concurrency.test.ts` and
+  `tests/integration/payment-callback.test.ts` (100-way concurrent hold race,
+  duplicate-callback dedup, pre-charge-response callback race).
+
+## Remaining open items
+
+- **Refund flow is untested**: `POST /bookings/:id/cancel` on a `CONFIRMED`
+  booking fires the gateway `/refund` and expects its `REFUNDED` callback to
+  land on the same idempotent path as payment callbacks — this hasn't been
+  exercised against the real gateway yet.
+- **Deploy step is wired but inert**: `cd.yml`'s `deploy` job is gated on a
+  `DEPLOY_ENABLED` repo variable and `DEPLOY_HOST`/`DEPLOY_USER`/
+  `DEPLOY_SSH_KEY` secrets that aren't set yet — see `DEPLOYMENT.md` (not
+  committed; ask whoever owns the infra lab for a copy) for the manual
+  provisioning steps that precede turning it on.
+- **No rate limiting / stricter input validation** on public endpoints
+  (`/otp/send` has a basic resend cooldown; nothing else does).
