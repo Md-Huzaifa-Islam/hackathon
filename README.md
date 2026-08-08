@@ -29,24 +29,84 @@ Full spec: [`REQUIREMENTS.md`](./REQUIREMENTS.md) · Design decisions & trade-of
 | Payments | Stripe Checkout + webhooks |
 | Infra | Docker Compose, GitHub Actions CI/CD, Traefik |
 
+## Project structure
+
+```
+cinemaseat/
+├── frontend/             Next.js app — see frontend/README.md
+├── backend/              Express + Prisma + Postgres API — see backend/README.md
+│   └── prisma/           schema.prisma, migrations, seed data
+├── load-tests/           k6 scenarios (seat race, hold expiry, breakpoint ramp)
+├── docker-compose.yml    orchestrates frontend + backend + redis + gateway
+├── docker-compose.local.yml   optional disposable-Postgres overlay
+├── docker-compose.prod.yml    deploy overlay (Traefik, GHCR images, replicas)
+├── .github/workflows/    CI + CD
+├── DECISIONS.md          design decisions and trade-offs
+└── REQUIREMENTS.md       full hackathon spec
+```
+
 ## System design
 
+### Components
+
 ```
-Browser ──► frontend (Next.js) ──► backend (Express)
-                                          │
-                        ┌─────────────────┼─────────────────┐
-                        ▼                 ▼                 ▼
-                 external postgres      redis        mock gateway
-                 (via Prisma)         (docker)       (OTP only)
-                                          │
-                              Stripe ──► webhook ──► backend
+                              ┌─────────────────────────────────────────┐
+                              │              Traefik (VPS)               │
+                              │        TLS, routing, load balancing      │
+                              └───────────────┬─────────────┬───────────┘
+                                               │             │
+                                       cinemaseat.*   api.cinemaseat.*
+                                               │             │
+                                               ▼             ▼
+                                       ┌────────────┐  ┌──────────────────┐
+                        Browser ─────► │  frontend  │  │  backend (×N)    │
+                                       │  (Next.js) │──│  (Express)       │
+                                       └────────────┘  └───┬────┬────┬───┘
+                                                            │    │    │
+                                              ┌─────────────┘    │    └─────────────┐
+                                              ▼                  ▼                  ▼
+                                    ┌──────────────────┐  ┌──────────┐    ┌─────────────────┐
+                                    │ external Postgres│  │  Redis   │    │  mock gateway    │
+                                    │ (Supabase/Neon,  │  │ (docker) │    │  (OTP send/verify│
+                                    │  via Prisma)     │  │          │    │   only)          │
+                                    └──────────────────┘  └──────────┘    └─────────────────┘
+                                              ▲
+                                              │ webhook (signed, idempotent on event.id)
+                                        ┌──────────┐
+                                        │  Stripe  │◄──── checkout.session created by backend
+                                        └──────────┘
 ```
 
-- The frontend never touches Postgres/Redis/the gateway directly — only the backend's HTTP API.
-- The backend is the sole source of truth for seat status, holds, bookings, and payment state. Seat holds use a single atomic conditional `UPDATE` (no locks, no races) — see `DECISIONS.md` #2.
-- `POST /bookings/:id/pay` returns immediately with a Stripe `checkoutUrl`; the booking only confirms once Stripe's webhook arrives, verified and deduped by `event.id`.
-- The hackathon's mock gateway now handles OTP only — Stripe replaced it for payments (see `DECISIONS.md` #5).
-- Postgres is external, not run in `docker-compose.yml`; better-auth runs against that same database, no third-party auth provider.
+- **Frontend** never talks to Postgres/Redis/the gateway/Stripe directly — only the backend's HTTP API. It renders backend-authoritative state and redirects the browser to Stripe's hosted Checkout page for payment.
+- **Backend** is the sole source of truth for seat status, holds, bookings, and payment state, and is horizontally scalable — `BACKEND_REPLICAS` runs N stateless containers behind Traefik, since all state lives in Postgres/Redis, never in-process.
+- **Postgres** is external (Supabase/Neon/RDS), not run in `docker-compose.yml`. better-auth's session/user tables live in the same database — no third-party auth provider.
+- **Redis** backs idempotency-key caching; not on the critical path for seat-hold correctness (that's a DB-level guarantee, see below).
+- **Mock gateway** (the hackathon-provided one) now handles OTP send/verify only — Stripe replaced it for charge/refund. See `DECISIONS.md` #5.
+
+### Data model
+
+`User`/`Session`/`Account`/`Verification` (better-auth) · `Movie` → `Showtime` → `Screen` (→ `Theatre`) · `Seat` × `Showtime` → `ShowSeat` (the bookable unit, carries `status`/`holdExpiresAt`) · `Booking` → `ShowSeat[]` + `Payment[]` · `OtpRequest`. Full schema: [`backend/prisma/schema.prisma`](./backend/prisma/schema.prisma).
+
+### Concurrency: seat holds
+
+The seat-race problem (100 users, 1 seat) is solved with a single **atomic conditional `UPDATE`** —
+`UPDATE show_seats SET status='HELD' WHERE id=? AND status='AVAILABLE'` — relying on Postgres's
+row-level atomicity instead of explicit locks or a Redis mutex. Under N concurrent requests, exactly
+one `UPDATE` affects a row; every other request affects zero rows and gets a clean `409`. Verified
+with a live 100-way race: [`load-tests/results/scenario-a.md`](./load-tests/results/scenario-a.md).
+Full rationale: `DECISIONS.md` #2.
+
+### Payment flow
+
+1. `POST /bookings/:id/pay` creates a Stripe Checkout Session and returns `{ checkoutUrl }`
+   immediately — never blocks on Stripe.
+2. Seats are extended from the short browse-and-decide hold (`HOLD_TTL_SECONDS`) to a longer
+   payment window (`PAYMENT_WINDOW_SECONDS`) at this point, so a slow payer doesn't lose the seat
+   mid-checkout.
+3. Stripe's `checkout.session.completed` webhook — signature-verified, deduped on `event.id` — is
+   what actually confirms the booking. It re-claims every seat with the same atomic `UPDATE` before
+   confirming; if a seat is genuinely gone, it auto-refunds via `stripe.refunds.create` instead of
+   confirming a booking with no seat. Full rationale: `DECISIONS.md` #6.
 
 ## Quick start
 
