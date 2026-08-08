@@ -81,7 +81,7 @@ export default function BookingsPage() {
                 <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                   <div className="space-y-2 text-sm text-muted-foreground">
                     <div className="font-medium text-foreground">Booking ID: {booking.reference ?? booking.id}</div>
-                    <div>Seats: {booking.seatIds.join(", ")}</div>
+                    <div>Seats: {(booking.seatLabels ?? booking.seatIds).join(", ")}</div>
                     <div>Amount: {booking.totalAmount ?? 0} {booking.currency ?? "BDT"}</div>
                   </div>
                   <div className="flex flex-wrap gap-2">

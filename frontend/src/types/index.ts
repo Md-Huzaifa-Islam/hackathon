@@ -60,9 +60,15 @@ export interface Showtime {
 }
 
 export interface Seat {
+  // The real seat identifier -- used in hold/booking API calls. Not for
+  // display; see `label` for the human-readable "A1" form.
   id: string;
   row: string;
   number: number;
+  // Human-readable "A1" form, e.g. `${row}${number}`. Always present;
+  // optional only so a bare `{ row, number }` literal still satisfies the
+  // type in tests/mocks without redundantly repeating the computation.
+  label?: string;
   status: SeatStatus;
   tier?: string;
   holdExpiresAt?: string;
@@ -82,6 +88,10 @@ export interface Booking {
   showtimeId: string;
   theatreId?: string;
   seatIds: string[];
+  // Human-readable "A1" form of each seat in seatIds, same order. Optional
+  // since older cached data may predate this field; callers should fall
+  // back to seatIds when absent.
+  seatLabels?: string[];
   status: BookingStatus;
   totalAmount?: number;
   currency?: string;

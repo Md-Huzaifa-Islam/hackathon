@@ -109,10 +109,13 @@ export function toShowtime(showtime: BackendShowtime): Showtime {
 }
 
 export function toSeat(showSeat: BackendShowSeat): Seat {
+  const row = showSeat.seat?.row ?? "?";
+  const number = showSeat.seat?.number ?? 0;
   return {
     id: showSeat.seatId,
-    row: showSeat.seat?.row ?? "?",
-    number: showSeat.seat?.number ?? 0,
+    row,
+    number,
+    label: `${row}${number}`,
     tier: showSeat.seat?.tier,
     status: showSeat.status,
     holdExpiresAt: showSeat.holdExpiresAt ?? undefined,
@@ -146,6 +149,9 @@ export function toBooking(booking: BackendBooking): Booking {
     showtimeId: booking.showtimeId,
     theatreId: booking.showtime?.screen?.theatre.id,
     seatIds: (booking.seats ?? []).map((s) => s.seatId),
+    seatLabels: (booking.seats ?? []).map((s) =>
+      s.seat ? `${s.seat.row}${s.seat.number}` : s.seatId,
+    ),
     status: deriveBookingStatus(booking),
     totalAmount: booking.totalAmount,
     currency: "BDT",

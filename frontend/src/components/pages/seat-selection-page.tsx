@@ -196,7 +196,7 @@ export function SeatSelectionPage({ showtimeId }: { showtimeId: string }) {
               <SeatLegend />
               {selectedSeat ? (
                 <div className="rounded-2xl border border-border/70 bg-background/50 p-3 text-sm">
-                  Selected seat: <span className="font-semibold">{selectedSeat.id}</span>
+                  Selected seat: <span className="font-semibold">{selectedSeat.label ?? selectedSeat.id}</span>
                 </div>
               ) : null}
               {heldSeat ? <HoldTimer expiresAt={heldSeat.holdExpiresAt} /> : null}
@@ -212,7 +212,7 @@ export function SeatSelectionPage({ showtimeId }: { showtimeId: string }) {
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               <div className="flex items-center justify-between"><span>Movie</span><span>{movieQuery.data?.title ?? "—"}</span></div>
-              <div className="flex items-center justify-between"><span>Seat</span><span>{heldSeat?.id ?? "—"}</span></div>
+              <div className="flex items-center justify-between"><span>Seat</span><span>{heldSeat?.label ?? heldSeat?.id ?? "—"}</span></div>
               <div className="flex items-center justify-between"><span>Total</span><span>{showQuery.data?.price ?? Math.round((showQuery.data?.priceCents ?? 0) / 100)} BDT</span></div>
               {heldSeat ? <HoldTimer expiresAt={heldSeat.holdExpiresAt} /> : null}
               <Button

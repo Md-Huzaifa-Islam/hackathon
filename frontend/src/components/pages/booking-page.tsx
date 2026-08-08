@@ -90,7 +90,7 @@ export function BookingPage({ bookingId }: { bookingId: string }) {
             </div>
             <div className="rounded-2xl border border-border/60 bg-background/50 p-4">
               <dt className="text-muted-foreground">Seats</dt>
-              <dd className="mt-1 font-semibold text-foreground">{booking.seatIds.join(", ")}</dd>
+              <dd className="mt-1 font-semibold text-foreground">{(booking.seatLabels ?? booking.seatIds).join(", ")}</dd>
             </div>
             <div className="rounded-2xl border border-border/60 bg-background/50 p-4">
               <dt className="text-muted-foreground">Total</dt>
