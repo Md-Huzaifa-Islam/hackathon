@@ -139,6 +139,136 @@ guaranteed to match what the gateway actually signed.
 other body-consuming middleware, which is easy to silently break if routes
 are reordered — worth a comment in `app.ts`, which it has.
 
+## 5. Stripe replaces the mock gateway for payments (charge/refund); OTP stays on the mock gateway
+
+**Options considered:** keep the hackathon mock gateway as the payment
+provider (required for judging against its documented misbehaviour —
+delayed callbacks, 10% FAILED, 8% duplicate delivery, force headers);
+replace it with Stripe Checkout for real charges/refunds while leaving OTP
+send/verify on the mock gateway (OTP has no real-world equivalent wired up);
+run both side by side behind a provider flag.
+
+**Chosen:** Stripe Checkout Sessions for `/bookings/:id/pay` and Stripe
+Refunds for `/bookings/:id/cancel`, replacing `gatewayClient.ts`'s
+`charge`/`refund` entirely. `POST /payments/callback` (mock-gateway HMAC
+callback) was replaced by `POST /payments/stripe/webhook` (Stripe-signature
+verified via `stripe.webhooks.constructEvent`). OTP send/verify/resend is
+untouched — still `gatewayClient.ts` against the mock gateway.
+
+**Why:** requested explicitly to make the app production-ready with real
+payments rather than a hackathon mock. The idempotency/concurrency design
+already built for the mock gateway (unique constraint on a dedup key, upsert
+instead of check-then-insert, tolerate the webhook arriving before the
+charge request's own response) carried over directly — Stripe makes the same
+guarantees (redelivery, no ordering guarantee) so the same pattern applies,
+just keyed on Stripe's `event.id` instead of the mock gateway's `event_id`.
+
+**Trade-off:** this breaks the hackathon's explicit "integrate the provided
+gateway, do not write your own mock" rule for the payment path specifically,
+and the Scenario A/B/C load-test scripts (`load-tests/`) exercise seat-hold
+concurrency and hold-expiry, not payment-gateway misbehaviour, so they don't
+depend on this either way. If this is being submitted for hackathon judging
+rather than run as a real production deployment, the payment path no longer
+matches what the judges' test harness expects (force headers like
+`X-Mock-Force: fail` have no Stripe equivalent). Requires real Stripe API
+keys (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`) to be provisioned and
+kept out of the repo — see root README's environment variable table.
+
+## 6. Never confirm a paid booking without re-proving the seats are ours
+
+**The bug this replaces:** `checkout.session.completed` used to confirm the
+booking and run `updateMany({ where: { bookingId } })` to mark its seats
+`BOOKED`. If the user's hold lapsed while they were on Stripe's page and
+someone else took the seat, that `updateMany` matched **zero rows** — the new
+booking's `connect` had already reassigned `ShowSeat.bookingId`. The booking
+was still marked `CONFIRMED`. Net effect: the customer was charged, silently
+received no seat, and nothing logged an error. Moving `HOLD_TTL_SECONDS` to
+180s made this *more* likely, since 3 minutes is a realistic amount of time
+to spend entering card details — and Scenario C measured 10-24s checkout
+round trips at 40+ VUs, eating a real slice of that window.
+
+**Options considered:** extend the hold to cover checkout and call it done;
+add a non-expiring `LOCKED` seat status for in-flight payments; re-verify
+seat ownership inside the webhook and refund when it fails.
+
+**Chosen:** all three layers except the new status — prevention *and* an
+automatic-remediation net, because a payment webhook is the one place where
+"mostly correct" means "sometimes keeps a stranger's money".
+
+1. **Prevention.** `POST /bookings/:id/pay` switches the seats from the short
+   browse-and-decide hold to `PAYMENT_WINDOW_SECONDS` (default 900 = 15 min)
+   with a conditional `updateMany`, so the seat cannot be resold while the
+   user is genuinely paying. `HOLD_TTL_SECONDS` and the payment window are
+   two different clocks for two different situations, and conflating them was
+   the root cause.
+2. **Remediation.** The webhook now claims each seat individually with the
+   same atomic conditional `UPDATE` primitive as the hold endpoint, matching
+   either "still linked to this booking" or "AVAILABLE and untaken". All
+   seats claimed → confirm. Any seat missing → roll back, `stripe.refunds
+   .create` with an idempotency key, mark the booking `EXPIRED` and the
+   payment `REFUNDED`, and log at error level.
+3. **A late payer whose seat is still free gets seated, not refunded.** The
+   `status = AVAILABLE` branch means an expired-but-untaken hold is
+   re-acquired on payment, which is what the customer actually wants.
+
+**Supporting changes:** `Booking.seatIds` (migration
+`20260808091500_add_booking_seat_snapshot`) stores an immutable snapshot of
+what a booking was for, because the live `ShowSeat.bookingId` link is
+*designed* to be reassigned and so cannot answer "what did this booking buy?"
+after the fact. `releaseExpiredHolds` now also clears `bookingId`, so a
+released seat never reads `AVAILABLE` while still pointing at an unpaid
+booking. `checkout.session.expired` releases seats immediately instead of
+holding them for the rest of the window.
+
+**Trade-off:** a seat can now be reserved for up to 15 minutes by someone who
+reaches Stripe Checkout and abandons it — worse for availability than the
+3-minute hold, better than selling a seat twice. `checkout.session.expired`
+caps the damage. Stripe's session `expires_at` floor is 30 minutes, so a
+session can outlive our 15-minute reservation; that gap is deliberately left
+to layer 2 rather than padding the window to 30 minutes and locking seats for
+half an hour.
+
+**Regression coverage:** `tests/integration/payment-seat-race.test.ts` — seat
+stolen (refund, not confirm), seat free again (re-acquire and seat them),
+and the normal path. The refund-path test caught a real flaw during
+development: the payment row was first written *inside* the transaction that
+rolls back, which would have refunded a charge with no record it ever
+arrived. Recording the payment is now its own transaction that runs first.
+
+## 7. Async route handlers must never crash the process
+
+**Found during Item 4 verification**, not hypothesised: a live request to
+`POST /bookings/:id/pay` with an invalid Stripe key threw
+`StripeAuthenticationError` inside an unawaited-by-Express async handler.
+Express 4 does not catch a rejected promise from an `async (req, res) => {}`
+route — it becomes an unhandled rejection, and Node terminates the process.
+Confirmed by reproducing it: the container's `RestartCount` incremented and
+every in-flight request on that replica was dropped, not just the one that
+triggered it. All 17 route handlers across the app had this exposure — any
+one bad external call (Stripe, the mock gateway, a transient Prisma error
+outside a `try/catch`) could take down an entire backend replica.
+
+**Chosen:** the standard Express 4 fix. `src/middleware/asyncHandler.ts`
+wraps a handler and forwards a rejection to `next(err)`; every route in
+`movies`, `showtimes`, `bookings`, `otp`, and `payments` now goes through it.
+`app.ts` gained a final 4-arg error-handling middleware that logs the error
+(with stack trace, via the existing pino-http request logger) and returns a
+clean `500 { error: "internal_error" }` instead of leaking a raw stack trace
+or letting Express's undocumented default handler take over.
+
+**Verified, not just inspected:** rebuilt the image, replayed the exact
+request that crashed the process before the fix. Result: `500` returned,
+error logged with full context, `docker inspect`'s `RestartCount` stayed at
+`0`, `/health` still `200` immediately after. `health.routes.ts` was left
+unwrapped — it already has its own `try/catch` and cannot throw uncaught.
+
+**Trade-off:** none meaningful — this is strictly additive resilience, no
+behavior change on the success path. The mechanical wrap-and-rewire touched
+every route file, which is a wide diff for what is conceptually a small fix;
+kept as one change rather than splitting per-file since the risk (a crashed
+process) was identical everywhere and staggering the fix would have left
+some routes vulnerable for no benefit.
+
 ## Open items (resolved)
 
 - ~~**better-auth Prisma schema**~~: `User`/`Account`/`Session`/`Verification`

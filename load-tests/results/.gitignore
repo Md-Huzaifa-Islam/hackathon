@@ -1,0 +1,3 @@
+# Raw k6 metric dumps are large and regenerated on every run; only the
+# human-readable .md reports are committed.
+*.json
